@@ -40,11 +40,11 @@ var shortestPathDijkstra = function(graph){
 		});
 		return visitAndRemove(nodes, [], root.id);
     });
-    
-    var rootWithLongestPathToTip =byRoot.length===0?[]: byRoot.sort(function(lhs, rhs){
-    	lhs.find(function(node){return node.id==="tip"});
-    	rhs.find(function(node){return node.id==="tip"});
-    	return lhs.cost - rhs.cost;
+    console.log(byRoot)
+    var rootWithShortestPathToTip = byRoot.length===0?[] : byRoot.sort(function(lhs, rhs){
+    	var lhsNode = lhs.find(function(node){return node.id==="tip"});
+    	var rhsNode = rhs.find(function(node){return node.id==="tip"});
+    	return lhsNode.cost - rhsNode.cost;
     })[0];
 
     var navigate = function(nodes, startingFromId, result){
@@ -56,7 +56,7 @@ var shortestPathDijkstra = function(graph){
 		return navigate(nodes, start.previous, result);
     }
 
-	return navigate(rootWithLongestPathToTip,"tip",[]).reverse();
+	return navigate(rootWithShortestPathToTip,"tip",[]).reverse();
 }
 
 var longestPathDijkstra = function(graph){
@@ -103,9 +103,9 @@ var longestPathDijkstra = function(graph){
     });
     
     var rootWithLongestPathToTip =byRoot.length===0?[]: byRoot.sort(function(lhs, rhs){
-    	lhs.find(function(node){return node.id==="tip"});
-    	rhs.find(function(node){return node.id==="tip"});
-    	return rhs.cost - lhs.cost;
+    	var lhsNode = lhs.find(function(node){return node.id==="tip"});
+    	var rhsNode = rhs.find(function(node){return node.id==="tip"});
+    	return rhsNode.cost - lhsNode.cost;
     })[0];
 
     var navigate = function(nodes, startingFromId, result){
