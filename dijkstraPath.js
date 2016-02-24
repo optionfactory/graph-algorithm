@@ -1,7 +1,8 @@
 var DijkstraPath = {
     _navigate: function(nodes, startingFromId, result) {
         var start = nodes.find(function(node) {
-            return node.id === startingFromId });
+            return node.id === startingFromId
+        });
         if (start == undefined) {
             return result;
         }
@@ -24,7 +25,8 @@ var DijkstraPath = {
         }
         var newCost = fromNode.cost + 1;
         var reachablefromNode = nodes.filter(function(node) {
-            return node.parents.indexOf(fromNode.id) > -1; })
+            return node.parents.indexOf(fromNode.id) > -1;
+        })
         reachablefromNode.forEach(function(node) {
             if (node.cost < newCost) {
                 return;
@@ -39,7 +41,8 @@ var DijkstraPath = {
         }
         var newCost = fromNode.cost + 1;
         var reachablefromNode = nodes.filter(function(node) {
-            return node.parents.indexOf(fromNode.id) > -1; })
+            return node.parents.indexOf(fromNode.id) > -1;
+        })
         reachablefromNode.forEach(function(node) {
             if (node.cost > newCost) {
                 return;
@@ -59,9 +62,11 @@ var DijkstraPath = {
             return visited.concat(nodes);
         }
         var head = nodes.find(function(node) {
-            return node.id === fromNodeId; });
+            return node.id === fromNodeId;
+        });
         nodes = nodes.filter(function(node) {
-            return node.id !== fromNodeId; });
+            return node.id !== fromNodeId;
+        });
         updateStrategy(nodes, head);
         visited.push(head);
         var nextNode = nextNodeStrategy(nodes);
@@ -79,14 +84,23 @@ var DijkstraPath = {
     },
     _sortByCostToNode: function(nodeId, lhs, rhs) {
         var lhsNode = lhs.find(function(node) {
-            return node.id === nodeId });
+            return node.id === nodeId;
+        });
         var rhsNode = rhs.find(function(node) {
-            return node.id === nodeId });
+            return node.id === nodeId
+        });
+        if (lhsNode == undefined) {
+            return rhsNode === undefined ? 0 : 1;
+        }
+        if (rhsNode == undefined) {
+            return -1;
+        }
         return lhsNode.cost - rhsNode.cost;
     },
     shortestToNode: function(graph, toNodeId) {
         var roots = graph.filter(function(node) {
-            return node.parents.length == 0; });
+            return node.parents.length == 0;
+        });
         var byRoot = roots.map(function(root) {
             var nodes = DijkstraPath._createNodesStructure(graph, Infinity);
             return DijkstraPath._visitAndRemove(nodes, [], root.id, DijkstraPath._updateCostIfLower, DijkstraPath._getLowestCostNode);
@@ -97,7 +111,8 @@ var DijkstraPath = {
     },
     longestToNode: function(graph, toNodeId) {
         var roots = graph.filter(function(node) {
-            return node.parents.length == 0; });
+            return node.parents.length == 0;
+        });
         var byRoot = roots.map(function(root) {
             var nodes = DijkstraPath._createNodesStructure(graph, -Infinity);
             return DijkstraPath._visitAndRemove(nodes, [], root.id, DijkstraPath._updateCostIfHigher, DijkstraPath._getHighestCostNode);
@@ -108,7 +123,8 @@ var DijkstraPath = {
     },
     longestPossible: function(graph) {
         var roots = graph.filter(function(node) {
-            return node.parents.length == 0; });
+            return node.parents.length == 0;
+        });
         var byRoot = roots.map(function(root) {
             var nodes = DijkstraPath._createNodesStructure(graph, -Infinity);
             return DijkstraPath._visitAndRemove(nodes, [], root.id, DijkstraPath._updateCostIfHigher, DijkstraPath._getHighestCostNode);

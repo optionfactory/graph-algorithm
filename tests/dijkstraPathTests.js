@@ -1,4 +1,8 @@
 QUnit.module( "DijkstraPath.shortestToNode");
+QUnit.test( "path to not existing node is empty", function( assert ) {
+	var graph = demoGraphs[graphName];
+	assert.deepEqual(DijkstraPath.shortestToNode(graph.nodes, "notExisting"),[]);
+});
 for (var graphName in demoGraphs){
 	QUnit.test( graphName, function( assert ) {
 		var graph = demoGraphs[graphName];
@@ -7,6 +11,10 @@ for (var graphName in demoGraphs){
 }
 
 QUnit.module( "DijkstraPath.longestToNode");
+QUnit.test( "path to not existing node is empty", function( assert ) {
+	var graph = demoGraphs[graphName];
+	assert.deepEqual(DijkstraPath.longestToNode(graph.nodes, "notExisting"),[]);
+});
 for (var graphName in demoGraphs){
 	QUnit.test( graphName, function( assert ) {
 		var graph = demoGraphs[graphName];
