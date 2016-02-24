@@ -19,32 +19,16 @@ var DijkstraPath = {
     _sortByCost: function(lhs, rhs) {
         return lhs.cost < rhs.cost ? -1 : lhs.cost > rhs.cost ? 1 : 0;
     },
-    _updateCostIfLower: function(nodes, fromNode) {
+    _updateCostIfLower: function(costIncrement, nodes, fromNode) {
         if (fromNode.cost === Infinity) {
             fromNode.cost = 0;
         }
-        var newCost = fromNode.cost + 1;
+        var newCost = fromNode.cost + costIncrement;
         var reachablefromNode = nodes.filter(function(node) {
             return node.parents.indexOf(fromNode.id) > -1;
         })
         reachablefromNode.forEach(function(node) {
             if (node.cost < newCost) {
-                return;
-            }
-            node.cost = newCost;
-            node.previous = fromNode.id;
-        });
-    },
-    _updateCostIfHigher: function(nodes, fromNode) {
-        if (fromNode.cost === -Infinity) {
-            fromNode.cost = 0;
-        }
-        var newCost = fromNode.cost + 1;
-        var reachablefromNode = nodes.filter(function(node) {
-            return node.parents.indexOf(fromNode.id) > -1;
-        })
-        reachablefromNode.forEach(function(node) {
-            if (node.cost > newCost) {
                 return;
             }
             node.cost = newCost;
@@ -98,44 +82,72 @@ var DijkstraPath = {
         return lhsNode.cost - rhsNode.cost;
     },
     shortestToNode: function(graph, toNodeId) {
-        var roots = graph.filter(function(node) {
+        var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        var byRoot = roots.map(function(root) {
+        var routesByRoot = rootNodes.map(function(root) {
             var nodes = DijkstraPath._createNodesStructure(graph, Infinity);
-            return DijkstraPath._visitAndRemove(nodes, [], root.id, DijkstraPath._updateCostIfLower, DijkstraPath._getLowestCostNode);
+            return DijkstraPath._visitAndRemove(nodes, [], root.id, DijkstraPath._currier(DijkstraPath._updateCostIfLower, 1), DijkstraPath._getLowestCostNode);
         });
 
-        var rootWithShortestPathToNode = byRoot.length === 0 ? [] : byRoot.sort(DijkstraPath._currier(DijkstraPath._sortByCostToNode, toNodeId))[0];
+        var rootWithShortestPathToNode = routesByRoot.length === 0 ? [] : routesByRoot.sort(DijkstraPath._currier(DijkstraPath._sortByCostToNode, toNodeId))[0];
         return DijkstraPath._navigate(rootWithShortestPathToNode, toNodeId, []).reverse();
     },
     longestToNode: function(graph, toNodeId) {
-        var roots = graph.filter(function(node) {
+        var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        var byRoot = roots.map(function(root) {
-            var nodes = DijkstraPath._createNodesStructure(graph, -Infinity);
-            return DijkstraPath._visitAndRemove(nodes, [], root.id, DijkstraPath._updateCostIfHigher, DijkstraPath._getHighestCostNode);
+        var routesByRoot = rootNodes.map(function(root) {
+            var nodes = DijkstraPath._createNodesStructure(graph, Infinity);
+            var result = DijkstraPath._visitAndRemove(nodes, [], root.id, DijkstraPath._currier(DijkstraPath._updateCostIfLower, -1), DijkstraPath._getLowestCostNode);
+            result.forEach(function(node) {
+                node.cost = node.cost === Infinity ? Infinity : -node.cost;
+            })
+            return result;
         });
 
-        var rootWithLongestPathToNode = byRoot.length === 0 ? [] : byRoot.sort(DijkstraPath._currier(DijkstraPath._sortByCostToNode, toNodeId)).reverse()[0];
+        var rootWithLongestPathToNode = routesByRoot.length === 0 ? [] : routesByRoot.sort(DijkstraPath._currier(DijkstraPath._sortByCostToNode, toNodeId)).reverse()[0];
         return DijkstraPath._navigate(rootWithLongestPathToNode, toNodeId, []).reverse();
     },
+    _notInfinity: function(node) {
+        return node.cost !== Infinity;
+    },
     longestPossible: function(graph) {
-        var roots = graph.filter(function(node) {
+        var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        var byRoot = roots.map(function(root) {
-            var nodes = DijkstraPath._createNodesStructure(graph, -Infinity);
-            return DijkstraPath._visitAndRemove(nodes, [], root.id, DijkstraPath._updateCostIfHigher, DijkstraPath._getHighestCostNode);
+        var routesByRoot = rootNodes.map(function(root) {
+            var nodes = DijkstraPath._createNodesStructure(graph, Infinity);
+            var result = DijkstraPath._visitAndRemove(nodes, [], root.id, DijkstraPath._currier(DijkstraPath._updateCostIfLower, -1), DijkstraPath._getLowestCostNode);
+            result.forEach(function(node) {
+                node.cost = node.cost === Infinity ? Infinity : -node.cost;
+            })
+            return result;
         });
+        if (routesByRoot.length === 0) {
+            return [];
+        }
 
-        var rootWithLongestPathToNode = byRoot.length === 0 ? [] : byRoot.sort(function(lhs, rhs) {
-            var lhsMostCostlyNodeNode = lhs.sort(DijkstraPath._sortByCost).reverse()[0];
-            var rhsMostCostlyNodeNode = rhs.sort(DijkstraPath._sortByCost).reverse()[0];
-            return rhsMostCostlyNodeNode.cost - lhsMostCostlyNodeNode.cost;
-        })[0];
-        var mostCostlyNodeToReach = rootWithLongestPathToNode.sort(DijkstraPath._sortByCost).reverse()[0];
-        return DijkstraPath._navigate(rootWithLongestPathToNode, mostCostlyNodeToReach.id, []).reverse();
+        var routeWithLongestPathToNode = routesByRoot.sort(function(lhs, rhs) {
+            var lhsMostCostlyNodeNode = lhs
+                .filter(DijkstraPath._notInfinity)
+                .sort(DijkstraPath._sortByCost)
+                .reverse()[0];
+            var rhsMostCostlyNodeNode = rhs
+                .filter(DijkstraPath._notInfinity)
+                .sort(DijkstraPath._sortByCost)
+                .reverse()[0];
+            return lhsMostCostlyNodeNode.cost - rhsMostCostlyNodeNode.cost;
+        }).reverse()[0];
+        var mostCostlyNodeToReach = routeWithLongestPathToNode
+            .filter(DijkstraPath._notInfinity)
+            .sort(DijkstraPath._sortByCost)
+            .reverse()[0];
+        if (mostCostlyNodeToReach === undefined) {
+            return routeWithLongestPathToNode.map(function(node) {
+                return node.id;
+            });
+        }
+        return DijkstraPath._navigate(routeWithLongestPathToNode, mostCostlyNodeToReach.id, []).reverse();
     }
 }

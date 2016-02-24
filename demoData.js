@@ -42,7 +42,7 @@ var demoGraphs ={
 		],
 		shortestToTip:	["root","tip"],
 		longestToTip:	["root","tip"],
-		longest:		["root","tip"]
+		longest:		["root","branch"]
 	},
 	forkAtFirstLeaf:{
 		nodes:[
@@ -53,7 +53,7 @@ var demoGraphs ={
 		],
 		shortestToTip:	["root","node1", "tip"],
 		longestToTip:	["root", "node1","tip"],
-		longest:		["root","node1","tip"]
+		longest:		["root","node1","branch"]
 	},
 	forkAndMerge:{
 		nodes:[
@@ -63,8 +63,8 @@ var demoGraphs ={
 			{ id: "tip", 	timestamp: 3, parents:["br1", "br2"] }
 		],
 		shortestToTip:	["root", "br2", "tip"],
-		longestToTip:	["root", "br2", "tip"],
-		longest:		[]
+		longestToTip:	["root", "br1", "tip"],
+		longest:		["root", "br1", "tip"]
 	},
 	forkAtRootLongerBranch:{
 		nodes:[
@@ -119,8 +119,8 @@ var demoGraphs ={
 			{ id: "tip", 	timestamp: 4, parents:["root1", "root2"] }
 		],
 		shortestToTip:	["root1", "tip"],
-		longestToTip:	["root1", "tip"],
-		longest:		["root1", "tip"]
+		longestToTip:	["root2", "tip"],
+		longest:		["root2", "tip"]
 	},
 	twoRootsLongerBranch:{
 		nodes:[
