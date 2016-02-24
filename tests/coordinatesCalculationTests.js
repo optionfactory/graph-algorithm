@@ -1,5 +1,5 @@
 QUnit.module("coordinatesCalculation");
-/*Object.keys(demoGraphs).forEach(function(graphName){
+Object.keys(demoGraphs).forEach(function(graphName){
 	console.log(graphName);
     QUnit.test("all " + graphName + " nodes have coordinates", function(assert) {
         var graph = demoGraphs[graphName];
@@ -11,4 +11,3 @@ QUnit.module("coordinatesCalculation");
         assert.deepEqual(untouchedNodes.length, 0);
     });
 })
-*/

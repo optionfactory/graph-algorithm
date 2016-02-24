@@ -122,6 +122,15 @@ var demoGraphs ={
 		longestToTip:	["root2", "tip"],
 		longest:		["root2", "tip"]
 	},
+	twoRootsOneMissing:{
+		nodes:[
+			{ id: "root2", 	timestamp: 2, parents:[] },
+			{ id: "tip", 	timestamp: 4, parents:["root1", "root2"] }
+		],
+		shortestToTip:	["root2", "tip"],
+		longestToTip:	["root2", "tip"],
+		longest:		["root2", "tip"]
+	},
 	twoRootsLongerBranch:{
 		nodes:[
 			{ id: "root1", 	timestamp: 0, parents:[] },
