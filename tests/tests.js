@@ -1,13 +1,15 @@
-QUnit.test( "shortestPathDijkstra", function( assert ) {
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.singleNode),["tip"]);
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.twoNodes),["root", "tip"]);
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.threeNodes),["root", "node1", "tip"]);
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.fourNodes),["root", "node1", "node2", "tip"]);
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.forkAtRoot),["root", "tip"]);
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.forkAtFirstLeaf),["root", "node1", "tip"]);
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.forkAndMerge),["root", "br2", "tip"]);
+QUnit.module( "shortestPathDijkstra");
+for (var graphName in demoGraphs){
+	QUnit.test( graphName, function( assert ) {
+		var graph = demoGraphs[graphName];
+		assert.deepEqual(shortestPathDijkstra(graph.nodes),graph.shortest);
+	});
+}
 
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.forkAtRootLongerBranch),["root", "br1n1", "tip"]);
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.forkAtFirstLeafLongerBranch),["root", "node1", "br1n1", "tip"]);
-  assert.deepEqual(shortestPathDijkstra(demoGraphs.forkAndMergeLongerBranch),["root", "br2", "tip"]);
-});
+QUnit.module( "longestPathDijkstra");
+for (var graphName in demoGraphs){
+	QUnit.test( graphName, function( assert ) {
+		var graph = demoGraphs[graphName];
+		assert.deepEqual(longestPathDijkstra(graph.nodes),graph.longest);
+	});
+}
