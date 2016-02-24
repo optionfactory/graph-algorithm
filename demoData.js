@@ -51,9 +51,9 @@ var demoGraphs ={
 			{ id: "tip", 	timestamp: 2, parents:["node1"] },
 			{ id: "branch",	timestamp: 3, parents:["node1"] }
 		],
-		shortestToTip:	["root", "tip"],
-		longestToTip:	["root", "tip"],
-		longest:		["root","tip"]
+		shortestToTip:	["root","node1", "tip"],
+		longestToTip:	["root", "node1","tip"],
+		longest:		["root","node1","tip"]
 	},
 	forkAndMerge:{
 		nodes:[
