@@ -8,6 +8,7 @@ function putInLineAncestors(nodes, coords, ofId, finalX, lineY) {
     var longestChain = DijkstraPath.longestToNode(nodes, ofId);
     //remove current destination
     longestChain = longestChain.splice(0, longestChain.length - 1).reverse();
+    
     var x = finalX;
     for (var nodeIdx in longestChain) {
         var nodeId = longestChain[nodeIdx];
@@ -34,14 +35,6 @@ function calculateCoordinates(graph) {
 
     var otherNodes = graph.nodes.filter(function(node) {
         return longestPossiblePath.indexOf(node.id) === -1;
-    });
-    otherNodesIds = otherNodes.map(function(node) {
-        return node.id;
-    })
-    otherNodes.forEach(function(node) {
-        node.parents = node.parents.filter(function(nodeId) {
-            return otherNodesIds.indexOf(nodeId) > -1;
-        });
     });
     var x = 0;
     for (var nodeIdx in longestPossiblePath) {
