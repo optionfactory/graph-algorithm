@@ -91,7 +91,7 @@ var BellmanFord = {
             return node.cost !== Infinity && !visited.some(graphs.byId(node.id));
         });
         if (reachableNotVisited.length === 0) {
-            return visited;
+            return nodes;
         }
         var nextNode = reachableNotVisited[0];
         return BellmanFord._exploreAndUpdate(nodes, visited, nextNode);
@@ -109,7 +109,7 @@ var BellmanFord = {
             if (nodes.length <= 1) {
                 return nodes;
             }
-            for (var i = 0; i != nodes.length - 1; ++i) {
+            for (var i = 0; i < nodes.length - 1; ++i) {
                 nodes = BellmanFord._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(root.id)));
             }
             return nodes;
@@ -136,9 +136,9 @@ var BellmanFord = {
         }
         var nodes = graphs.createNodesStructure(graph, inverseEdgeWeightCalculator);
         if (nodes.length <= 1) {
-            return nodes;
+            return nodes.map(graphs.toId);
         }
-        for (var i = 0; i != nodes.length - 1; ++i) {
+        for (var i = 0; i < nodes.length - 1; ++i) {
             nodes = BellmanFord._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(fromNodeId)));
         }
         var mostCostlyNodeToReach = nodes
@@ -164,7 +164,7 @@ var BellmanFord = {
             if (nodes.length <= 1) {
                 return nodes;
             }
-            for (var i = 0; i != nodes.length - 1; ++i) {
+            for (var i = 0; i < nodes.length - 1; ++i) {
                 nodes = BellmanFord._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(root.id)));
             }
             return nodes;
@@ -203,77 +203,22 @@ var Dijkstra = {
             return !visited.some(graphs.byId(node.id));
         });
         if (notVisited.length === 0) {
-            return visited;
+            return nodes;
         }
         var nextNode = graphs.getLowestCostNode(notVisited);
         return Dijkstra._exploreAndUpdate(nodes, visited, nextNode);
     },
     shortestToNode: function(graph, toNodeId, edgeWeightCalculator) {
-            var rootNodes = graph.filter(function(node) {
-                return node.parents.length == 0;
-            });
-            edgeWeightCalculator = edgeWeightCalculator || graphs.defaultEdgeWeight;
-            var routesByStartingPoint = rootNodes.map(function(root) {
-                var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
-                return Dijkstra._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(root.id)));
-            });
+        var rootNodes = graph.filter(function(node) {
+            return node.parents.length == 0;
+        });
+        edgeWeightCalculator = edgeWeightCalculator || graphs.defaultEdgeWeight;
+        var routesByStartingPoint = rootNodes.map(function(root) {
+            var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
+            return Dijkstra._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(root.id)));
+        });
 
-            var routeWithShortestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
-            return graphs.navigate(routeWithShortestPathToNode, toNodeId, []).reverse();
-        }
-        /*,
-            longestToNode: function(graph, toNodeId, edgeWeightCalculator) {
-                var rootNodes = graph.filter(function(node) {
-                    return node.parents.length == 0;
-                });
-                edgeWeightCalculator = edgeWeightCalculator || function(from, to) {
-                    return -1;
-                };
-                var routesByStartingPoint = rootNodes.map(function(root) {
-                    var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
-                    var result = Dijkstra._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(root.id)));
-                    return result;
-                });
-
-                var rootWithLongestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId)) [0];
-                return graphs.navigate(rootWithLongestPathToNode, toNodeId, []).reverse();
-            },
-            _finiteCost: function(node) {
-                return node.cost !== Infinity;
-            },
-            longestPossible: function(graph, edgeWeightCalculator) {
-                var rootNodes = graph.filter(function(node) {
-                    return node.parents.length == 0;
-                });
-                edgeWeightCalculator = edgeWeightCalculator || function(from, to) {
-                    return -1;
-                };
-                var routesByStartingPoint = rootNodes.map(function(root) {
-                    var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
-                    var result = Dijkstra._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(root.id)));
-                    return result;
-                });
-                if (routesByStartingPoint.length === 0) {
-                    return [];
-                }
-
-                var routeWithLongestPathToNode = routesByStartingPoint.sort(function(lhs, rhs) {
-                    var lhsMostCostlyNodeNode = lhs
-                        .filter(Dijkstra._finiteCost)
-                        .sort(graphs.sortByCost)[0];
-                    var rhsMostCostlyNodeNode = rhs
-                        .filter(Dijkstra._finiteCost)
-                        .sort(graphs.sortByCost)[0];
-                    return lhsMostCostlyNodeNode.cost - rhsMostCostlyNodeNode.cost;
-                })[0];
-                var mostCostlyNodeToReach = routeWithLongestPathToNode
-                    .filter(Dijkstra._finiteCost)
-                    .sort(graphs.sortByCost)[0];
-                if (mostCostlyNodeToReach === undefined) {
-                    return routeWithLongestPathToNode.map(function(node) {
-                        return node.id;
-                    });
-                }
-                return graphs.navigate(routeWithLongestPathToNode, mostCostlyNodeToReach.id, []).reverse();
-            }*/
+        var routeWithShortestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
+        return graphs.navigate(routeWithShortestPathToNode, toNodeId, []).reverse();
+    }
 }

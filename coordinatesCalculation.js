@@ -1,29 +1,68 @@
 function positionOtherBranches(nodes, coords, connectedToNodeId, alreadyPositioned, positionOnDirectrix) {
     var edgeWeightCalculator = function(from, to) {
-        //Prefer paths to nodes not yet placed
+        //Prefer paths from nodes not yet placed
         return alreadyPositioned.includes(to) ? -1000 : 1;
     }
-    var longestChain = BellmanFord.longestToNode(nodes, connectedToNodeId, edgeWeightCalculator);
-    longestChain = longestChain.filter(function(nodeId) {
+    var longestAncestorsChain = BellmanFord.longestToNode(nodes, connectedToNodeId, edgeWeightCalculator);
+    longestAncestorsChain = longestAncestorsChain.filter(function(nodeId) {
         return !alreadyPositioned.includes(nodeId);
     }); // remove already positioned points;
-    longestChain = longestChain.reverse(); // end to start
-    if (longestChain.length === 0) {
+    longestAncestorsChain = longestAncestorsChain.reverse(); // end to start
+    if (longestAncestorsChain.length === 0) {
         return []; //no new nodes were positioned
     }
 
     var x = coords.find(graphs.byId(connectedToNodeId)).x - 5;
-    var positioning = [].concat(longestChain);
-    for (var nodeIdx in longestChain) {
-        var nodeId = longestChain[nodeIdx];
+    var positioning = [].concat(longestAncestorsChain);
+    for (var nodeIdx in longestAncestorsChain) {
+        var nodeId = longestAncestorsChain[nodeIdx];
         var currentNode = nodes.find(graphs.byId(nodeId));
         //position nodes along the directriX
         coords.find(graphs.byId(currentNode.id)).y = positionOnDirectrix;
         coords.find(graphs.byId(currentNode.id)).x = x;
-
-        var positionedBackwards = positionOtherBranches(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), positionOnDirectrix + 10);
-        positioning = positioning.concat(positionedBackwards);
+        var onDirectrix = positionOnDirectrix;
+        do {
+            onDirectrix += 10;
+            var positionedBackwards = positionOtherBranches(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
+            positioning = positioning.concat(positionedBackwards);
+            var positionedForward = positionDescendants(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
+            positioning = positioning.concat(positionedForward);
+        } while (positionedBackwards.length !== 0 && positionedForward !== 0)
         x -= 10;
+    }
+    return positioning;
+}
+
+function positionDescendants(nodes, coords, connectedToNodeId, alreadyPositioned, positionOnDirectrix) {
+    var edgeWeightCalculator = function(from, to) {
+        //Prefer paths from nodes not yet placed
+        return alreadyPositioned.includes(from) ? -1000 : 1;
+    }
+    var longestDescendantsChain = BellmanFord.longestFromNode(nodes, connectedToNodeId, edgeWeightCalculator);
+    longestDescendantsChain = longestDescendantsChain.filter(function(nodeId) {
+        return !alreadyPositioned.includes(nodeId);
+    }); // remove already positioned points;
+    if (longestDescendantsChain.length === 0) {
+        return []; //no new nodes were positioned
+    }
+
+    var x = coords.find(graphs.byId(connectedToNodeId)).x + 5;
+    var positioning = [].concat(longestDescendantsChain);
+    for (var nodeIdx in longestDescendantsChain) {
+        var nodeId = longestDescendantsChain[nodeIdx];
+        var currentNode = nodes.find(graphs.byId(nodeId));
+        //position nodes along the directriX
+        coords.find(graphs.byId(currentNode.id)).y = positionOnDirectrix;
+        coords.find(graphs.byId(currentNode.id)).x = x;
+        var onDirectrix = positionOnDirectrix;
+        do {
+            onDirectrix += 10;
+            var positionedBackwards = positionOtherBranches(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
+            positioning = positioning.concat(positionedBackwards);
+            var positionedForward = positionDescendants(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
+            positioning = positioning.concat(positionedForward);
+        } while (positionedBackwards.length !== 0 && positionedForward !== 0)
+        x += 10;
     }
     return positioning;
 }
@@ -49,9 +88,11 @@ function fixNodes(nodes, currentDirectrix, startingPoint) {
     // then navigate backwards from the last node and position 
     // ancestors and descendants along parallel directrixes
     var inversePath = longestPossiblePath.reverse();
+    var alreadyVisited = [].concat(longestPossiblePath);
     for (var nodeIdx in inversePath) {
         var nodeId = inversePath[nodeIdx];
-        positionOtherBranches(nodes, coords, nodeId, longestPossiblePath, currentDirectrix + 5);
+        alreadyVisited.concat(positionOtherBranches(nodes, coords, nodeId, alreadyVisited, currentDirectrix + 5));
+        alreadyVisited.concat(positionDescendants(nodes, coords, nodeId, alreadyVisited, currentDirectrix + 5));
     }
     return coords;
 }
