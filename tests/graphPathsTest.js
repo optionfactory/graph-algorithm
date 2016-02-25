@@ -3,6 +3,9 @@ var deepEqual = function(x, y) {
         if (Object.keys(x).length != Object.keys(y).length)
             return false;
         for (var prop in x) {
+            if (typeof x[prop] === "function") {
+                continue;
+            }
             if (y.hasOwnProperty(prop)) {
                 if (!deepEqual(x[prop], y[prop]))
                     return false;
@@ -31,44 +34,63 @@ function errorMessage(possibleExpectedSolutions, gotSolution) {
     return msg;
 }
 
-QUnit.module("DijkstraPath.shortestToTip");
+QUnit.module("Dijkstra.shortestToTip");
 QUnit.test("path to not existing node is empty", function(assert) {
     var graph = demoGraphs.singleNode;
-    assert.deepEqual(DijkstraPath.shortestToNode(graph.nodes, "notExisting"), []);
+    assert.deepEqual(Dijkstra.shortestToNode(graph.nodes, "notExisting"), []);
 });
 
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
-        var got = DijkstraPath.shortestToNode(graph.nodes, "tip");
+        var got = Dijkstra.shortestToNode(graph.nodes, "tip");
         assert.ok(graph.shortestToTip.some(function(expected) {
-            return deepEqual(expected, got)
+            return deepEqual(expected, got);
         }), errorMessage(graph.shortestToTip, got));
     });
 });
 
-QUnit.module("DijkstraPath.longestToTip");
+QUnit.module("BellmanFord.shortestToTip");
 QUnit.test("path to not existing node is empty", function(assert) {
     var graph = demoGraphs.singleNode;
-    assert.deepEqual(DijkstraPath.longestToNode(graph.nodes, "notExisting"), []);
+    assert.deepEqual(BellmanFord.shortestToNode(graph.nodes, "notExisting"), []);
+});
+
+Object.keys(demoGraphs).forEach(function(graphName) {
+    QUnit.test(graphName, function(assert) {
+        var graph = demoGraphs[graphName];
+        var got = BellmanFord.shortestToNode(graph.nodes, "tip");
+        assert.ok(graph.shortestToTip.some(function(expected) {
+            return deepEqual(expected, got);
+        }), errorMessage(graph.shortestToTip, got));
+    });
+});
+
+/*
+
+QUnit.module("Dijkstra.longestToTip");
+QUnit.test("path to not existing node is empty", function(assert) {
+    var graph = demoGraphs.singleNode;
+    assert.deepEqual(Dijkstra.longestToNode(graph.nodes, "notExisting"), []);
 });
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
-        var got = DijkstraPath.longestToNode(graph.nodes, "tip");
+        var got = Dijkstra.longestToNode(graph.nodes, "tip");
         assert.ok(graph.longestToTip.some(function(expected) {
             return deepEqual(expected, got)
         }), errorMessage(graph.longestToTip, got));
     });
 });
 
-QUnit.module("DijkstraPath.longestPossible");
+QUnit.module("Dijkstra.longestPossible");
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
-        var got = DijkstraPath.longestPossible(graph.nodes);
+        var got = Dijkstra.longestPossible(graph.nodes);
         assert.ok(graph.longestPossible.some(function(expected) {
             return deepEqual(expected, got)
         }), errorMessage(graph.longestPossible, got));
     });
 });
+*/

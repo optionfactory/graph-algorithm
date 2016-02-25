@@ -1,8 +1,4 @@
-function byId(nodeId) {
-    return function(node) {
-        return node.id === nodeId;
-    }
-}
+/*
 
 function retrofitAncestors(nodes, coords, ancestorsOfId, previouslyPositioned, positionOnDirectrix, endingAtPoint) {
     var edgeWeightCalculator = function(from, to) {
@@ -65,4 +61,4 @@ function fixNodes(nodes, currentDirectrix, startingPoint) {
         positioning = positioning.concat(positionedBackword);
     }
     return coords;
-}
+}*/

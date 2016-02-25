@@ -1,3 +1,4 @@
+/*
 QUnit.module("coordinatesCalculation");
 Object.keys(demoGraphs).forEach(function(graphName){
 	console.log(graphName);
@@ -11,3 +12,4 @@ Object.keys(demoGraphs).forEach(function(graphName){
         assert.deepEqual(untouchedNodes.length, 0);
     });
 })
+*/
