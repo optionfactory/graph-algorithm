@@ -262,7 +262,7 @@ var demoGraphs = {
             ["root", "b1", "b2", "b3","m3", "m4", "a4", "tip"]
         ],
         longestPossible: [
-            ["root", "b1", "b2", "b3","m3", "m4", "m5", "m6"]
+            ["root", "b1", "b2", "b3","m3", "m4", "m5", "m6", "m7"]
         ]
     }
 }

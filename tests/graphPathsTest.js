@@ -66,7 +66,33 @@ Object.keys(demoGraphs).forEach(function(graphName) {
     });
 });
 
+QUnit.module("BellmanFord.shortestToNode for longestToTip");
+Object.keys(demoGraphs).forEach(function(graphName) {
+    QUnit.test(graphName, function(assert) {
+        var graph = demoGraphs[graphName];
+        var got = BellmanFord.shortestToNode(graph.nodes, "tip", function(from, to) {
+            return -1;
+        });
+        assert.ok(graph.longestToTip.some(function(expected) {
+            return deepEqual(expected, got)
+        }), errorMessage(graph.longestToTip, got));
+    });
+});
+
+QUnit.module("BellmanFord.longestPossible");
+Object.keys(demoGraphs).forEach(function(graphName) {
+    QUnit.test(graphName, function(assert) {
+        var graph = demoGraphs[graphName];
+        var got = BellmanFord.longestPossible(graph.nodes);
+        assert.ok(graph.longestPossible.some(function(expected) {
+            return deepEqual(expected, got)
+        }), errorMessage(graph.longestPossible, got));
+    });
+});
+
 /*
+
+
 
 QUnit.module("Dijkstra.longestToTip");
 QUnit.test("path to not existing node is empty", function(assert) {
