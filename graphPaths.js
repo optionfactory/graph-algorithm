@@ -69,6 +69,9 @@ var graphs = {
     toId: function(node) {
         return node.id;
     },
+        finiteCost: function(node) {
+        return node.cost !== Infinity;
+    },
     reachablefromNode: function(fromNodeId) {
         return function(node) {
             return node.parents.map(graphs.toId).indexOf(fromNodeId) > -1;
@@ -112,9 +115,7 @@ var BellmanFord = {
         var routeWithShortestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
         return graphs.navigate(routeWithShortestPathToNode, toNodeId, []).reverse();
     },
-    _notInfinity: function(node) {
-        return node.cost !== Infinity;
-    },
+
     longestPossible: function(graph, edgeWeightCalculator) {
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
@@ -139,15 +140,15 @@ var BellmanFord = {
 
         var routeWithLongestPathToNode = routesByStartingPoint.sort(function(lhs, rhs) {
             var lhsMostCostlyNodeNode = lhs
-                .filter(BellmanFord._notInfinity)
+                .filter(graphs.finiteCost)
                 .sort(graphs.sortNodesByCost)[0];
             var rhsMostCostlyNodeNode = rhs
-                .filter(BellmanFord._notInfinity)
+                .filter(graphs.finiteCost)
                 .sort(graphs.sortNodesByCost)[0];
             return lhsMostCostlyNodeNode.cost - rhsMostCostlyNodeNode.cost;
         })[0];
         var mostCostlyNodeToReach = routeWithLongestPathToNode
-            .filter(BellmanFord._notInfinity)
+            .filter(graphs.finiteCost)
             .sort(graphs.sortNodesByCost)[0];
         if (mostCostlyNodeToReach === undefined) {
             return routeWithLongestPathToNode.map(function(node) {
@@ -202,7 +203,7 @@ var Dijkstra = {
                 var rootWithLongestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId)) [0];
                 return graphs.navigate(rootWithLongestPathToNode, toNodeId, []).reverse();
             },
-            _notInfinity: function(node) {
+            _finiteCost: function(node) {
                 return node.cost !== Infinity;
             },
             longestPossible: function(graph, edgeWeightCalculator) {
@@ -223,15 +224,15 @@ var Dijkstra = {
 
                 var routeWithLongestPathToNode = routesByStartingPoint.sort(function(lhs, rhs) {
                     var lhsMostCostlyNodeNode = lhs
-                        .filter(Dijkstra._notInfinity)
+                        .filter(Dijkstra._finiteCost)
                         .sort(graphs.sortByCost)[0];
                     var rhsMostCostlyNodeNode = rhs
-                        .filter(Dijkstra._notInfinity)
+                        .filter(Dijkstra._finiteCost)
                         .sort(graphs.sortByCost)[0];
                     return lhsMostCostlyNodeNode.cost - rhsMostCostlyNodeNode.cost;
                 })[0];
                 var mostCostlyNodeToReach = routeWithLongestPathToNode
-                    .filter(Dijkstra._notInfinity)
+                    .filter(Dijkstra._finiteCost)
                     .sort(graphs.sortByCost)[0];
                 if (mostCostlyNodeToReach === undefined) {
                     return routeWithLongestPathToNode.map(function(node) {
