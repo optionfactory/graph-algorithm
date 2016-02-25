@@ -4,46 +4,65 @@ function byId(nodeId) {
     }
 }
 
-function putInLineAncestors(nodes, coords, ofId, finalX, lineY) {
-    var longestChain = DijkstraPath.longestToNode(nodes, ofId);
-    //remove current destination
-    longestChain = longestChain.splice(0, longestChain.length - 1).reverse();
-    
-    var x = finalX;
+function retrofitAncestors(nodes, coords, ancestorsOfId, previouslyPositioned, positionOnDirectrix, endingAtPoint) {
+    var edgeWeightCalculator = function(from, to) {
+        //Prefer paths to nodes not yet placed
+        return previouslyPositioned.indexOf(to) > -1 ? 0 : -1;
+    }
+    var longestChain = DijkstraPath.longestToNode(nodes, ancestorsOfId, edgeWeightCalculator)
+        .reverse() //end to start
+        .splice(1) //remove final point;
+    if (longestChain.length === 0) {
+        return [];
+    }
+    var x = endingAtPoint;
+    var positioning = [].concat(longestChain);
     for (var nodeIdx in longestChain) {
         var nodeId = longestChain[nodeIdx];
         var currentNode = nodes.find(byId(nodeId));
-        coords.find(byId(currentNode.id)).y = lineY;
+        //position nodes along the directriX
+        coords.find(byId(currentNode.id)).y = positionOnDirectrix;
         coords.find(byId(currentNode.id)).x = x;
 
-        putInLineAncestors(nodes.filter(function(node) {
-            return longestChain.indexOf(node.id) === -1;
-        }), currentNode.id, x - 5, lineY + 10)
+        var positionedBackword = retrofitAncestors(nodes, coords, currentNode.id, previouslyPositioned.concat(positioning), positionOnDirectrix + 10, x - 5);
+        positioning = positioning.concat(positionedBackword);
         x -= 10;
     }
+    return positioning;
 }
 
-function calculateCoordinates(graph) {
-    var coords = graph.nodes.map(function(node) {
+
+function positionDescendants(nodes, coords, ancestorsOfId, previouslyPositioned, positionOnDirectrix, endingAtPoint) {
+    return [];
+}
+
+function fixNodes(nodes, currentDirectrix, startingPoint) {
+    var coords = nodes.map(function(node) {
         return {
             id: node.id,
             x: undefined,
             y: undefined
         }
     });
-    var longestPossiblePath = DijkstraPath.longestPossible(graph.nodes);
-
-    var otherNodes = graph.nodes.filter(function(node) {
-        return longestPossiblePath.indexOf(node.id) === -1;
-    });
-    var x = 0;
+    var longestPossiblePath = DijkstraPath.longestPossible(nodes);
+    var positioning = longestPossiblePath;
+    var x = startingPoint;
+    // position nodes along the directriX
     for (var nodeIdx in longestPossiblePath) {
         var nodeId = longestPossiblePath[nodeIdx];
-        var currentNode = graph.nodes.find(byId(nodeId));
-        coords.find(byId(currentNode.id)).y = 0;
+        var currentNode = nodes.find(byId(nodeId));
+        coords.find(byId(currentNode.id)).y = currentDirectrix;
         coords.find(byId(currentNode.id)).x = x;
-        putInLineAncestors(otherNodes.concat(currentNode), coords, nodeId, x - 5, 10);
         x += 10;
+    }
+    // then navigate backwards and position ancestors and descendants along a parallel directrix
+    var inversePath = longestPossiblePath.reverse();
+    for (var nodeIdx in inversePath) {
+        var nodeId = inversePath.reverse[nodeIdx];
+        var positionedBackword = retrofitAncestors(nodes, coords, currentNode.id, positioning, currentDirectrix + 5, coords.find(byId(currentNode.id)).x - 5);
+        positioning = positioning.concat(positionedBackword);
+        var positionedForward = positionDescendants(nodes, coords, currentNode.id, positioning, currentDirectrix + 15, coords.find(byId(currentNode.id)).x + 5);
+        positioning = positioning.concat(positionedBackword);
     }
     return coords;
 }
