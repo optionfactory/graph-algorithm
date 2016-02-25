@@ -39,6 +39,10 @@ QUnit.test("path to not existing node is empty", function(assert) {
     var graph = demoGraphs.singleNode;
     assert.deepEqual(Dijkstra.shortestToNode(graph.nodes, "notExisting"), []);
 });
+QUnit.test("path to root is itself", function(assert) {
+    var graph = demoGraphs.twoRoots;
+    assert.deepEqual(Dijkstra.shortestToNode(graph.nodes, "root2"), ["root2"]);
+});
 
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
@@ -54,6 +58,10 @@ QUnit.module("BellmanFord.shortestToTip");
 QUnit.test("path to not existing node is empty", function(assert) {
     var graph = demoGraphs.singleNode;
     assert.deepEqual(BellmanFord.shortestToNode(graph.nodes, "notExisting"), []);
+});
+QUnit.test("path to root is itself", function(assert) {
+    var graph = demoGraphs.twoRoots;
+    assert.deepEqual(BellmanFord.shortestToNode(graph.nodes, "root2"), ["root2"]);
 });
 
 Object.keys(demoGraphs).forEach(function(graphName) {
@@ -89,34 +97,3 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         }), errorMessage(graph.longestPossible, got));
     });
 });
-
-/*
-
-
-
-QUnit.module("Dijkstra.longestToTip");
-QUnit.test("path to not existing node is empty", function(assert) {
-    var graph = demoGraphs.singleNode;
-    assert.deepEqual(Dijkstra.longestToNode(graph.nodes, "notExisting"), []);
-});
-Object.keys(demoGraphs).forEach(function(graphName) {
-    QUnit.test(graphName, function(assert) {
-        var graph = demoGraphs[graphName];
-        var got = Dijkstra.longestToNode(graph.nodes, "tip");
-        assert.ok(graph.longestToTip.some(function(expected) {
-            return deepEqual(expected, got)
-        }), errorMessage(graph.longestToTip, got));
-    });
-});
-
-QUnit.module("Dijkstra.longestPossible");
-Object.keys(demoGraphs).forEach(function(graphName) {
-    QUnit.test(graphName, function(assert) {
-        var graph = demoGraphs[graphName];
-        var got = Dijkstra.longestPossible(graph.nodes);
-        assert.ok(graph.longestPossible.some(function(expected) {
-            return deepEqual(expected, got)
-        }), errorMessage(graph.longestPossible, got));
-    });
-});
-*/

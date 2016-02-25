@@ -8,9 +8,6 @@ Function.prototype.curry = function() {
         return __method.apply(this, args.concat(Array.prototype.slice.call(arguments, 0)));
     }
 }
-Array.prototype.contains = function(element) {
-    return this.indexOf(element) > -1;
-}
 var graphs = {
     byId: function(nodeId) {
         return function(node) {
@@ -53,6 +50,12 @@ var graphs = {
     sortByCostToNode: function(nodeId, lhsRoute, rhsRoute) {
         var lhsNode = lhsRoute.find(graphs.byId(nodeId));
         var rhsNode = rhsRoute.find(graphs.byId(nodeId));
+        if (lhsNode === undefined) {
+            return rhsNode === undefined ? 0 : 1;
+        }
+        if (rhsNode === undefined) {
+            return -1;
+        }
         return graphs.sortNodesByCost(lhsNode, rhsNode);
     },
     getLowestCostNode: function(nodes) {
@@ -69,7 +72,7 @@ var graphs = {
     toId: function(node) {
         return node.id;
     },
-        finiteCost: function(node) {
+    finiteCost: function(node) {
         return node.cost !== Infinity;
     },
     reachablefromNode: function(fromNodeId) {
@@ -94,7 +97,7 @@ var BellmanFord = {
         return BellmanFord._exploreAndUpdate(nodes, visited, nextNode);
     },
     shortestToNode: function(graph, toNodeId, edgeWeightCalculator) {
-        if (!graph.map(graphs.toId).contains(toNodeId)) {
+        if (!graph.map(graphs.toId).includes(toNodeId)) {
             return [];
         }
         var rootNodes = graph.filter(function(node) {
@@ -115,7 +118,6 @@ var BellmanFord = {
         var routeWithShortestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
         return graphs.navigate(routeWithShortestPathToNode, toNodeId, []).reverse();
     },
-
     longestPossible: function(graph, edgeWeightCalculator) {
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
