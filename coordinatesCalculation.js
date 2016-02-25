@@ -1,9 +1,9 @@
 function positionOtherBranches(nodes, coords, connectedToNodeId, alreadyPositioned, positionOnDirectrix) {
     var edgeWeightCalculator = function(from, to) {
         //Prefer paths to nodes not yet placed
-        return alreadyPositioned.includes(to) ? 1000 : -1;
+        return alreadyPositioned.includes(to) ? -1000 : 1;
     }
-    var longestChain = BellmanFord.shortestToNode(nodes, connectedToNodeId, edgeWeightCalculator);
+    var longestChain = BellmanFord.longestToNode(nodes, connectedToNodeId, edgeWeightCalculator);
     longestChain = longestChain.filter(function(nodeId) {
         return !alreadyPositioned.includes(nodeId);
     }); // remove already positioned points;

@@ -74,13 +74,11 @@ Object.keys(demoGraphs).forEach(function(graphName) {
     });
 });
 
-QUnit.module("BellmanFord.shortestToNode for longestToTip");
+QUnit.module("BellmanFord.longestToNode");
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
-        var got = BellmanFord.shortestToNode(graph.nodes, "tip", function(from, to) {
-            return -1;
-        });
+        var got = BellmanFord.longestToNode(graph.nodes, "tip");
         assert.ok(graph.longestToTip.some(function(expected) {
             return deepEqual(expected, got)
         }), errorMessage(graph.longestToTip, got));
@@ -92,6 +90,20 @@ Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
         var got = BellmanFord.longestPossible(graph.nodes);
+        assert.ok(graph.longestPossible.some(function(expected) {
+            return deepEqual(expected, got)
+        }), errorMessage(graph.longestPossible, got));
+    });
+});
+
+QUnit.module("BellmanFord.longestFromNode");
+Object.keys(demoGraphs).forEach(function(graphName) {
+    var graph = demoGraphs[graphName];
+    if (!graph.nodes.map(graphs.toId).includes("root")) {
+        return;
+    }
+    QUnit.test(graphName, function(assert) {
+        var got = BellmanFord.longestFromNode(graph.nodes, "root");
         assert.ok(graph.longestPossible.some(function(expected) {
             return deepEqual(expected, got)
         }), errorMessage(graph.longestPossible, got));

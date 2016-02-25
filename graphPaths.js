@@ -118,6 +118,39 @@ var BellmanFord = {
         var routeWithShortestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
         return graphs.navigate(routeWithShortestPathToNode, toNodeId, []).reverse();
     },
+    longestToNode: function(graph, toNodeId, edgeWeightCalculator) {
+        edgeWeightCalculator = edgeWeightCalculator || graphs.defaultEdgeWeight;
+        var inverseEdgeWeightCalculator = function(from, to) {
+            return -edgeWeightCalculator(from, to);
+        }
+        return BellmanFord.shortestToNode(graph, toNodeId, inverseEdgeWeightCalculator);
+    },
+    longestFromNode: function(graph, fromNodeId, edgeWeightCalculator) {
+        if (!graph.map(graphs.toId).includes(fromNodeId)) {
+            return [];
+        }
+
+        edgeWeightCalculator = edgeWeightCalculator || graphs.defaultEdgeWeight;
+        var inverseEdgeWeightCalculator = function(from, to) {
+            return -edgeWeightCalculator(from, to);
+        }
+        var nodes = graphs.createNodesStructure(graph, inverseEdgeWeightCalculator);
+        if (nodes.length <= 1) {
+            return nodes;
+        }
+        for (var i = 0; i != nodes.length - 1; ++i) {
+            nodes = BellmanFord._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(fromNodeId)));
+        }
+        var mostCostlyNodeToReach = nodes
+            .filter(graphs.finiteCost)
+            .sort(graphs.sortNodesByCost)[0];
+        if (mostCostlyNodeToReach === undefined) {
+            return nodes.map(function(node) {
+                return node.id;
+            });
+        }
+        return graphs.navigate(nodes, mostCostlyNodeToReach.id, []).reverse();
+    },
     longestPossible: function(graph, edgeWeightCalculator) {
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;

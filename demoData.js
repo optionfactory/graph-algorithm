@@ -185,42 +185,42 @@ var demoGraphs = {
     },
     twoRoots: {
         nodes: [
-            { id: "root1", timestamp: 0, parents: [] },
+            { id: "root", timestamp: 0, parents: [] },
             { id: "root2", timestamp: 2, parents: [] },
-            { id: "tip", timestamp: 4, parents: ["root1", "root2"] }
+            { id: "tip", timestamp: 4, parents: ["root", "root2"] }
         ],
         shortestToTip: [
-            ["root1", "tip"],
+            ["root", "tip"],
             ["root2", "tip"]
         ],
         longestToTip: [
-            ["root1", "tip"],
+            ["root", "tip"],
             ["root2", "tip"]
         ],
         longestPossible: [
-            ["root1", "tip"],
+            ["root", "tip"],
             ["root2", "tip"]
         ]
     },
     twoRootsOneMissing: {
         nodes: [
-            { id: "root2", timestamp: 2, parents: [] },
-            { id: "tip", timestamp: 4, parents: ["root1", "root2"] }
+            { id: "root", timestamp: 2, parents: [] },
+            { id: "tip", timestamp: 4, parents: ["root", "root2"] }
         ],
         shortestToTip: [
-            ["root2", "tip"]
+            ["root", "tip"]
         ],
         longestToTip: [
-            ["root2", "tip"]
+            ["root", "tip"]
         ],
         longestPossible: [
-            ["root2", "tip"]
+            ["root", "tip"]
         ]
     },
     twoRootsLongerBranch: {
         nodes: [
-            { id: "root1", timestamp: 0, parents: [] },
-            { id: "node1", timestamp: 2, parents: ["root1"] },
+            { id: "root", timestamp: 0, parents: [] },
+            { id: "node1", timestamp: 2, parents: ["root"] },
             { id: "root2", timestamp: 4, parents: [] },
             { id: "tip", timestamp: 8, parents: ["node1", "root2"] }
         ],
@@ -228,10 +228,10 @@ var demoGraphs = {
             ["root2", "tip"]
         ],
         longestToTip: [
-            ["root1", "node1", "tip"]
+            ["root", "node1", "tip"]
         ],
         longestPossible: [
-            ["root1", "node1", "tip"]
+            ["root", "node1", "tip"]
         ]
     },
     crossingBranches: {
