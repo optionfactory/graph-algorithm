@@ -18,7 +18,7 @@ var deepEqual = function(x, y) {
 }
 
 function errorMessage(possibleExpectedSolutions, gotSolution) {
-    var msg = "exptected: ";
+    var msg = "expected: ";
     if (possibleExpectedSolutions.length < 2) {
         msg = msg + "\"" + possibleExpectedSolutions + "\"";
     } else {

@@ -19,15 +19,10 @@ var DijkstraPath = {
     _sortByCost: function(lhs, rhs) {
         return lhs.cost < rhs.cost ? -1 : lhs.cost > rhs.cost ? 1 : 0;
     },
-    _updateCostIfLower: function(nodes, fromNode) {
+    _updateCostIfLower: function(reachablefromNode, fromNode) {
         if (fromNode.cost === Infinity) {
             fromNode.cost = 0;
         }
-        var reachablefromNode = nodes.filter(function(node) {
-            return node.parents.map(function(parent) {
-                return parent.id;
-            }).indexOf(fromNode.id) > -1;
-        })
         reachablefromNode.forEach(function(node) {
             var costIncrement = node.parents.find(function(parent) {
                 return parent.id === fromNode.id
@@ -43,20 +38,20 @@ var DijkstraPath = {
     _getLowestCostNode: function(nodes) {
         return nodes.sort(DijkstraPath._sortByCost)[0];
     },
-    _visitAndRemove: function(nodes, visited, fromNodeId) {
-        if (nodes.length <= 1) {
-            return visited.concat(nodes);
+    _visitAndRemove: function(nodes, visited, fromNode) {
+        var reachablefromNode = nodes.filter(function(node) {
+            return node.parents.map(function(parent) {
+                return parent.id;
+            }).indexOf(fromNode.id) > -1;
+        });
+        DijkstraPath._updateCostIfLower(reachablefromNode, fromNode);
+        visited.push(fromNode);
+        var notVisited = nodes.filter(function(node){return !visited.some(function(visitedNode){return visitedNode.id===node.id})});
+        if(notVisited.length===0){
+            return visited;
         }
-        var head = nodes.find(function(node) {
-            return node.id === fromNodeId;
-        });
-        otherNodes = nodes.filter(function(node) {
-            return node.id !== fromNodeId;
-        });
-        DijkstraPath._updateCostIfLower(otherNodes, head);
-        visited.push(head);
-        var nextNode = DijkstraPath._getLowestCostNode(otherNodes);
-        return DijkstraPath._visitAndRemove(otherNodes, visited, nextNode.id);
+        var nextNode = DijkstraPath._getLowestCostNode(notVisited);
+        return DijkstraPath._visitAndRemove(nodes, visited, nextNode);
     },
     _createNodesStructure: function(graph, edgeWeightCalculator) {
         return graph.map(function(node) {
@@ -79,14 +74,21 @@ var DijkstraPath = {
         });
         return lhsNode.cost - rhsNode.cost;
     },
+    _byId: function(nodeId){
+        return function(node){
+            return node.id === nodeId;
+        }
+    },
     shortestToNode: function(graph, toNodeId, edgeWeightCalculator) {
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        edgeWeightCalculator = edgeWeightCalculator || function(from, to) { return 1; };
+        edgeWeightCalculator = edgeWeightCalculator || function(from, to) {
+            return 1;
+        };
         var routesByStartingPoint = rootNodes.map(function(root) {
             var nodes = DijkstraPath._createNodesStructure(graph, edgeWeightCalculator);
-            return DijkstraPath._visitAndRemove(nodes, [], root.id);
+            return DijkstraPath._visitAndRemove(nodes, [], nodes.find(DijkstraPath._byId(root.id)));
         });
 
         var rootWithShortestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(DijkstraPath._currier(DijkstraPath._sortByCostToNode, toNodeId))[0];
@@ -96,10 +98,12 @@ var DijkstraPath = {
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        edgeWeightCalculator = edgeWeightCalculator || function(from, to) { return -1; };
+        edgeWeightCalculator = edgeWeightCalculator || function(from, to) {
+            return -1;
+        };
         var routesByStartingPoint = rootNodes.map(function(root) {
             var nodes = DijkstraPath._createNodesStructure(graph, edgeWeightCalculator);
-            var result = DijkstraPath._visitAndRemove(nodes, [], root.id);
+            var result = DijkstraPath._visitAndRemove(nodes, [], nodes.find(DijkstraPath._byId(root.id)));
             return result;
         });
 
@@ -113,10 +117,12 @@ var DijkstraPath = {
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        edgeWeightCalculator = edgeWeightCalculator || function(from, to) { return -1; };
+        edgeWeightCalculator = edgeWeightCalculator || function(from, to) {
+            return -1;
+        };
         var routesByStartingPoint = rootNodes.map(function(root) {
             var nodes = DijkstraPath._createNodesStructure(graph, edgeWeightCalculator);
-            var result = DijkstraPath._visitAndRemove(nodes, [], root.id);
+            var result = DijkstraPath._visitAndRemove(nodes, [], nodes.find(DijkstraPath._byId(root.id)));
             return result;
         });
         if (routesByStartingPoint.length === 0) {
