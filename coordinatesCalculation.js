@@ -1,9 +1,16 @@
-function positionOtherBranches(nodes, coords, connectedToNodeId, alreadyPositioned, positionOnDirectrix) {
-    var edgeWeightCalculator = function(from, to) {
-        //Prefer paths from nodes not yet placed
-        return alreadyPositioned.includes(to) ? -1000 : 1;
-    }
-    var longestAncestorsChain = BellmanFord.costliestToNode(nodes, connectedToNodeId, edgeWeightCalculator);
+function positionAncestors(nodes, coords, connectedToNodeId, alreadyPositioned, positionOnDirectrix) {
+    var subGraph = nodes.filter(function(node) {
+        return node.id === connectedToNodeId || !alreadyPositioned.includes(node.id);
+    }).map(function(node) {
+        return {
+            id: node.id,
+            parents: node.parents.filter(function(parentId) {
+                return parentId === connectedToNodeId || !alreadyPositioned.includes(parentId);
+            })
+        };
+    });
+
+    var longestAncestorsChain = BellmanFord.costliestToNode(subGraph, connectedToNodeId);
     longestAncestorsChain = longestAncestorsChain.filter(function(nodeId) {
         return !alreadyPositioned.includes(nodeId);
     }); // remove already positioned points;
@@ -23,22 +30,28 @@ function positionOtherBranches(nodes, coords, connectedToNodeId, alreadyPosition
         var onDirectrix = positionOnDirectrix;
         do {
             onDirectrix += 10;
-            var positionedBackwards = positionOtherBranches(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
-            positioning = positioning.concat(positionedBackwards);
-            var positionedForward = positionDescendants(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
-            positioning = positioning.concat(positionedForward);
-        } while (positionedBackwards.length !== 0 && positionedForward !== 0)
+            var positionedAncestors = positionAncestors(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
+            positioning = positioning.concat(positionedAncestors);
+            var positionedDescendants = positionDescendants(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
+            positioning = positioning.concat(positionedDescendants);
+        } while (positionedAncestors.length !== 0 && positionedDescendants !== 0)
         x -= 10;
     }
     return positioning;
 }
 
 function positionDescendants(nodes, coords, connectedToNodeId, alreadyPositioned, positionOnDirectrix) {
-    var edgeWeightCalculator = function(from, to) {
-        //Prefer paths from nodes not yet placed
-        return alreadyPositioned.includes(from) ? -1000 : 1;
-    }
-    var longestDescendantsChain = BellmanFord.costliestFromNode(nodes, connectedToNodeId, edgeWeightCalculator);
+    var subGraph = nodes.filter(function(node) {
+        return node.id === connectedToNodeId || !alreadyPositioned.includes(node.id);
+    }).map(function(node) {
+        return {
+            id: node.id,
+            parents: node.parents.filter(function(parentId) {
+                return parentId === connectedToNodeId || !alreadyPositioned.includes(parentId);
+            })
+        };
+    });
+    var longestDescendantsChain = BellmanFord.costliestFromNode(subGraph, connectedToNodeId);
     longestDescendantsChain = longestDescendantsChain.filter(function(nodeId) {
         return !alreadyPositioned.includes(nodeId);
     }); // remove already positioned points;
@@ -57,17 +70,17 @@ function positionDescendants(nodes, coords, connectedToNodeId, alreadyPositioned
         var onDirectrix = positionOnDirectrix;
         do {
             onDirectrix += 10;
-            var positionedBackwards = positionOtherBranches(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
-            positioning = positioning.concat(positionedBackwards);
-            var positionedForward = positionDescendants(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
-            positioning = positioning.concat(positionedForward);
-        } while (positionedBackwards.length !== 0 && positionedForward !== 0)
+            var positionedAncestors = positionAncestors(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
+            positioning = positioning.concat(positionedAncestors);
+            var positionedDescendants = positionDescendants(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
+            positioning = positioning.concat(positionedDescendants);
+        } while (positionedAncestors.length !== 0 && positionedDescendants !== 0)
         x += 10;
     }
     return positioning;
 }
 
-function fixNodes(nodes, currentDirectrix, startingPoint) {
+function calculateCoordinates(nodes, currentDirectrix, startingPoint) {
     var coords = nodes.map(function(node) {
         return {
             id: node.id,
@@ -91,8 +104,8 @@ function fixNodes(nodes, currentDirectrix, startingPoint) {
     var alreadyVisited = [].concat(costliestPossiblePath);
     for (var nodeIdx in inversePath) {
         var nodeId = inversePath[nodeIdx];
-        alreadyVisited.concat(positionOtherBranches(nodes, coords, nodeId, alreadyVisited, currentDirectrix + 5));
-        alreadyVisited.concat(positionDescendants(nodes, coords, nodeId, alreadyVisited, currentDirectrix + 5));
+        alreadyVisited = alreadyVisited.concat(positionAncestors(nodes, coords, nodeId, alreadyVisited, currentDirectrix + 10));
+        alreadyVisited = alreadyVisited.concat(positionDescendants(nodes, coords, nodeId, alreadyVisited, currentDirectrix + 10));
     }
     return coords;
 }

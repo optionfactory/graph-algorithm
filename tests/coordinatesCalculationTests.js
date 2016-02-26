@@ -2,7 +2,7 @@ QUnit.module("Coordinates.Calculation");
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName + ": all nodes have coordinates", function(assert) {
         var graph = demoGraphs[graphName];
-        var coords = fixNodes(graph.nodes, 0, 0);
+        var coords = calculateCoordinates(graph.nodes, 0, 0);
         var untouchedNodes = coords.filter(function(node) {
             return node.x === undefined && node.y === undefined;
         });
@@ -10,7 +10,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
     });
     QUnit.test(graphName + ": no two nodes on the same coordinates", function(assert) {
         var graph = demoGraphs[graphName];
-        var coords = fixNodes(graph.nodes, 0, 0);
+        var coords = calculateCoordinates(graph.nodes, 0, 0);
         var nodesAndClashes = coords.map(function(node) {
             return {
                 node: node,
