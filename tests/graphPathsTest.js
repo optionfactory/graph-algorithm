@@ -21,12 +21,13 @@ var deepEqual = function(x, y) {
 }
 
 function errorMessage(possibleExpectedSolutions, gotSolution) {
-    var msg = "expected: ";
-    if (possibleExpectedSolutions.length < 2) {
-        msg = msg + "\"" + possibleExpectedSolutions + "\"";
+    var solutionsPossible = [].concat(possibleExpectedSolutions);
+    var msg = "expected: " ;
+    if (solutionsPossible.length < 2) {
+        msg = msg + "\"" + solutionsPossible + "\"";
     } else {
-        msg = msg + " either \"" + possibleExpectedSolutions[0] + "\"";
-        msg = msg + possibleExpectedSolutions.splice(1).map(function(expected) {
+        msg = msg + " either \"" + solutionsPossible[0] + "\"";
+        msg = msg + solutionsPossible.splice(1).map(function(expected) {
             return " or \"" + expected + "\"";
         });
     }
@@ -50,7 +51,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         var got = Dijkstra.shortestToNode(graph.nodes, "tip");
         assert.ok(graph.shortestToTip.some(function(expected) {
             return deepEqual(expected, got);
-        }), errorMessage(graph.shortestToTip, got));
+        }), errorMessage( graph.shortestToTip, got));
     });
 });
 
@@ -70,7 +71,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         var got = BellmanFord.shortestToNode(graph.nodes, "tip");
         assert.ok(graph.shortestToTip.some(function(expected) {
             return deepEqual(expected, got);
-        }), errorMessage(graph.shortestToTip, got));
+        }), errorMessage( graph.shortestToTip, got));
     });
 });
 
@@ -81,7 +82,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         var got = BellmanFord.longestToNode(graph.nodes, "tip");
         assert.ok(graph.longestToTip.some(function(expected) {
             return deepEqual(expected, got)
-        }), errorMessage(graph.longestToTip, got));
+        }), errorMessage( graph.longestToTip, got));
     });
 });
 
@@ -92,7 +93,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         var got = BellmanFord.longestPossible(graph.nodes);
         assert.ok(graph.longestPossible.some(function(expected) {
             return deepEqual(expected, got)
-        }), errorMessage(graph.longestPossible, got));
+        }), errorMessage( graph.longestPossible, got));
     });
 });
 
@@ -106,6 +107,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         var got = BellmanFord.longestFromNode(graph.nodes, "root");
         assert.ok(graph.longestPossible.some(function(expected) {
             return deepEqual(expected, got)
-        }), errorMessage(graph.longestPossible, got));
+        }), errorMessage
+(graph.longestPossible, got));
     });
 });
