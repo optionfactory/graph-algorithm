@@ -22,7 +22,7 @@ var deepEqual = function(x, y) {
 
 function errorMessage(possibleExpectedSolutions, gotSolution) {
     var solutionsPossible = [].concat(possibleExpectedSolutions);
-    var msg = "expected: " ;
+    var msg = "expected: ";
     if (solutionsPossible.length < 2) {
         msg = msg + "\"" + solutionsPossible + "\"";
     } else {
@@ -35,79 +35,78 @@ function errorMessage(possibleExpectedSolutions, gotSolution) {
     return msg;
 }
 
-QUnit.module("Dijkstra.shortestToTip");
+QUnit.module("Dijkstra.cheapestToTip");
 QUnit.test("path to not existing node is empty", function(assert) {
     var graph = demoGraphs.singleNode;
-    assert.deepEqual(Dijkstra.shortestToNode(graph.nodes, "notExisting"), []);
+    assert.deepEqual(Dijkstra.cheapestToNode(graph.nodes, "notExisting"), []);
 });
 QUnit.test("path to root is itself", function(assert) {
     var graph = demoGraphs.twoRoots;
-    assert.deepEqual(Dijkstra.shortestToNode(graph.nodes, "root2"), ["root2"]);
+    assert.deepEqual(Dijkstra.cheapestToNode(graph.nodes, "root2"), ["root2"]);
 });
 
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
-        var got = Dijkstra.shortestToNode(graph.nodes, "tip");
-        assert.ok(graph.shortestToTip.some(function(expected) {
+        var got = Dijkstra.cheapestToNode(graph.nodes, "tip");
+        assert.ok(graph.cheapestToTip.some(function(expected) {
             return deepEqual(expected, got);
-        }), errorMessage( graph.shortestToTip, got));
+        }), errorMessage(graph.cheapestToTip, got));
     });
 });
 
-QUnit.module("BellmanFord.shortestToTip");
+QUnit.module("BellmanFord.cheapestToTip");
 QUnit.test("path to not existing node is empty", function(assert) {
     var graph = demoGraphs.singleNode;
-    assert.deepEqual(BellmanFord.shortestToNode(graph.nodes, "notExisting"), []);
+    assert.deepEqual(BellmanFord.cheapestToNode(graph.nodes, "notExisting"), []);
 });
 QUnit.test("path to root is itself", function(assert) {
     var graph = demoGraphs.twoRoots;
-    assert.deepEqual(BellmanFord.shortestToNode(graph.nodes, "root2"), ["root2"]);
+    assert.deepEqual(BellmanFord.cheapestToNode(graph.nodes, "root2"), ["root2"]);
 });
 
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
-        var got = BellmanFord.shortestToNode(graph.nodes, "tip");
-        assert.ok(graph.shortestToTip.some(function(expected) {
+        var got = BellmanFord.cheapestToNode(graph.nodes, "tip");
+        assert.ok(graph.cheapestToTip.some(function(expected) {
             return deepEqual(expected, got);
-        }), errorMessage( graph.shortestToTip, got));
+        }), errorMessage(graph.cheapestToTip, got));
     });
 });
 
-QUnit.module("BellmanFord.longestToNode");
+QUnit.module("BellmanFord.costliestToNode");
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
-        var got = BellmanFord.longestToNode(graph.nodes, "tip");
-        assert.ok(graph.longestToTip.some(function(expected) {
+        var got = BellmanFord.costliestToNode(graph.nodes, "tip");
+        assert.ok(graph.costliestToTip.some(function(expected) {
             return deepEqual(expected, got)
-        }), errorMessage( graph.longestToTip, got));
+        }), errorMessage(graph.costliestToTip, got));
     });
 });
 
-QUnit.module("BellmanFord.longestPossible");
+QUnit.module("BellmanFord.costliestPossible");
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
-        var got = BellmanFord.longestPossible(graph.nodes);
-        assert.ok(graph.longestPossible.some(function(expected) {
+        var got = BellmanFord.costliestPossible(graph.nodes);
+        assert.ok(graph.costliestPossible.some(function(expected) {
             return deepEqual(expected, got)
-        }), errorMessage( graph.longestPossible, got));
+        }), errorMessage(graph.costliestPossible, got));
     });
 });
 
-QUnit.module("BellmanFord.longestFromNode");
+QUnit.module("BellmanFord.costliestFromNode");
 Object.keys(demoGraphs).forEach(function(graphName) {
     var graph = demoGraphs[graphName];
     if (!graph.nodes.map(graphs.toId).includes("root")) {
         return;
     }
     QUnit.test(graphName, function(assert) {
-        var got = BellmanFord.longestFromNode(graph.nodes, "root");
-        assert.ok(graph.longestPossible.some(function(expected) {
+        var got = BellmanFord.costliestFromNode(graph.nodes, "root");
+        assert.ok(graph.costliestPossible.some(function(expected) {
             return deepEqual(expected, got)
-        }), errorMessage
-(graph.longestPossible, got));
+        }), errorMessage(graph.costliestPossible, got));
     });
 });

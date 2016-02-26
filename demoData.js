@@ -3,13 +3,13 @@ var nodePrototype = { id: "anyString", timestamp: 0, parents: [] }
 var demoGraphs = {
     empty: {
         nodes: [],
-        shortestToTip: [
+        cheapestToTip: [
             []
         ],
-        longestToTip: [
+        costliestToTip: [
             []
         ],
-        longestPossible: [
+        costliestPossible: [
             []
         ]
     },
@@ -17,13 +17,13 @@ var demoGraphs = {
         nodes: [
             { id: "tip", timestamp: 0, parents: [] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["tip"]
         ]
     },
@@ -32,13 +32,13 @@ var demoGraphs = {
             { id: "root", timestamp: 0, parents: [] },
             { id: "tip", timestamp: 1, parents: ["root"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "tip"]
         ]
     },
@@ -48,13 +48,13 @@ var demoGraphs = {
             { id: "node1", timestamp: 1, parents: ["root"] },
             { id: "tip", timestamp: 2, parents: ["node1"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "node1", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "node1", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "node1", "tip"]
         ]
     },
@@ -64,13 +64,13 @@ var demoGraphs = {
             { id: "tip", timestamp: 1, parents: ["root"] },
             { id: "branch", timestamp: 2, parents: ["root"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "branch"],
             ["root", "tip"]
         ]
@@ -82,13 +82,13 @@ var demoGraphs = {
             { id: "tip", timestamp: 2, parents: ["node1"] },
             { id: "branch", timestamp: 3, parents: ["node1"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "node1", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "node1", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "node1", "branch"],
             ["root", "node1", "tip"]
         ]
@@ -100,15 +100,15 @@ var demoGraphs = {
             { id: "br2", timestamp: 2, parents: ["root"] },
             { id: "tip", timestamp: 3, parents: ["br1", "br2"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "br1", "tip"],
             ["root", "br2", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "br1", "tip"],
             ["root", "br2", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "br1", "tip"],
             ["root", "br2", "tip"]
         ]
@@ -120,13 +120,13 @@ var demoGraphs = {
             { id: "br2", timestamp: 2, parents: ["root"] },
             { id: "tip", timestamp: 5, parents: ["br1"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "br1", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "br1", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "br1", "tip"]
         ]
     },
@@ -137,13 +137,13 @@ var demoGraphs = {
             { id: "br1n2", timestamp: 5, parents: ["br1n1"] },
             { id: "tip", timestamp: 2, parents: ["root"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "br1n1", "br1n2"]
         ]
     },
@@ -155,13 +155,13 @@ var demoGraphs = {
             { id: "br2", timestamp: 3, parents: ["node1"] },
             { id: "tip", timestamp: 4, parents: ["br1"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "node1", "br1", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "node1", "br1", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "node1", "br1", "tip"]
         ]
     },
@@ -173,13 +173,13 @@ var demoGraphs = {
             { id: "br2", timestamp: 2, parents: ["root"] },
             { id: "tip", timestamp: 4, parents: ["br1n2", "br2"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "br2", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "br1n1", "br1n2", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "br1n1", "br1n2", "tip"]
         ]
     },
@@ -189,15 +189,15 @@ var demoGraphs = {
             { id: "root2", timestamp: 2, parents: [] },
             { id: "tip", timestamp: 4, parents: ["root", "root2"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "tip"],
             ["root2", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "tip"],
             ["root2", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "tip"],
             ["root2", "tip"]
         ]
@@ -207,13 +207,13 @@ var demoGraphs = {
             { id: "root", timestamp: 2, parents: [] },
             { id: "tip", timestamp: 4, parents: ["root", "root2"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "tip"]
         ]
     },
@@ -224,13 +224,13 @@ var demoGraphs = {
             { id: "root2", timestamp: 4, parents: [] },
             { id: "tip", timestamp: 8, parents: ["node1", "root2"] }
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root2", "tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "node1", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "node1", "tip"]
         ]
     },
@@ -254,14 +254,14 @@ var demoGraphs = {
             { id: "b4", timestamp: 0, parents: ["m2"] },
             { id: "b5", timestamp: 0, parents: ["b4"] },
         ],
-        shortestToTip: [
+        cheapestToTip: [
             ["root", "m1", "a1", "a3", "m4", "a4", "tip"],
             ["root","m1","m2","m3","m4","a4","tip"]
         ],
-        longestToTip: [
+        costliestToTip: [
             ["root", "b1", "b2", "b3","m3", "m4", "a4", "tip"]
         ],
-        longestPossible: [
+        costliestPossible: [
             ["root", "b1", "b2", "b3","m3", "m4", "m5", "m6", "m7"]
         ]
     }

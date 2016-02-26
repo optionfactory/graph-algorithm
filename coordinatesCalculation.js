@@ -3,7 +3,7 @@ function positionOtherBranches(nodes, coords, connectedToNodeId, alreadyPosition
         //Prefer paths from nodes not yet placed
         return alreadyPositioned.includes(to) ? -1000 : 1;
     }
-    var longestAncestorsChain = BellmanFord.longestToNode(nodes, connectedToNodeId, edgeWeightCalculator);
+    var longestAncestorsChain = BellmanFord.costliestToNode(nodes, connectedToNodeId, edgeWeightCalculator);
     longestAncestorsChain = longestAncestorsChain.filter(function(nodeId) {
         return !alreadyPositioned.includes(nodeId);
     }); // remove already positioned points;
@@ -38,7 +38,7 @@ function positionDescendants(nodes, coords, connectedToNodeId, alreadyPositioned
         //Prefer paths from nodes not yet placed
         return alreadyPositioned.includes(from) ? -1000 : 1;
     }
-    var longestDescendantsChain = BellmanFord.longestFromNode(nodes, connectedToNodeId, edgeWeightCalculator);
+    var longestDescendantsChain = BellmanFord.costliestFromNode(nodes, connectedToNodeId, edgeWeightCalculator);
     longestDescendantsChain = longestDescendantsChain.filter(function(nodeId) {
         return !alreadyPositioned.includes(nodeId);
     }); // remove already positioned points;
@@ -75,11 +75,11 @@ function fixNodes(nodes, currentDirectrix, startingPoint) {
             y: undefined
         }
     });
-    var longestPossiblePath = BellmanFord.longestPossible(nodes);
+    var costliestPossiblePath = BellmanFord.costliestPossible(nodes);
     var x = startingPoint;
     // position nodes in longest possible chain along the main directriX
-    for (var nodeIdx in longestPossiblePath) {
-        var nodeId = longestPossiblePath[nodeIdx];
+    for (var nodeIdx in costliestPossiblePath) {
+        var nodeId = costliestPossiblePath[nodeIdx];
         var currentNode = nodes.find(graphs.byId(nodeId));
         coords.find(graphs.byId(currentNode.id)).y = currentDirectrix;
         coords.find(graphs.byId(currentNode.id)).x = x;
@@ -87,8 +87,8 @@ function fixNodes(nodes, currentDirectrix, startingPoint) {
     }
     // then navigate backwards from the last node and position 
     // ancestors and descendants along parallel directrixes
-    var inversePath = longestPossiblePath.reverse();
-    var alreadyVisited = [].concat(longestPossiblePath);
+    var inversePath = costliestPossiblePath.reverse();
+    var alreadyVisited = [].concat(costliestPossiblePath);
     for (var nodeIdx in inversePath) {
         var nodeId = inversePath[nodeIdx];
         alreadyVisited.concat(positionOtherBranches(nodes, coords, nodeId, alreadyVisited, currentDirectrix + 5));

@@ -15,6 +15,7 @@ var graphs = {
         }
     },
     createNodesStructure: function(graph, edgeWeightCalculator) {
+        edgeWeightCalculator = edgeWeightCalculator || graphs.constantEdgeWeightCalculator(1);
         return graph.map(function(node) {
             return {
                 id: node.id,
@@ -26,8 +27,16 @@ var graphs = {
             }
         });
     },
-    defaultEdgeWeight: function(from, to) {
-        return 1;
+    constantEdgeWeightCalculator: function(cost) {
+        return function(from, to) {
+            return cost;
+        }
+    },
+    invertEdgeWeightCalculation: function(edgeWeightCalculator) {
+        edgeWeightCalculator = edgeWeightCalculator || graphs.constantEdgeWeightCalculator(1);
+        return function(from, to) {
+            return -1 * edgeWeightCalculator(from, to);
+        }
     },
     updateCostIfLower: function(reachablefromNode, fromNode) {
         if (fromNode.cost === Infinity) {
@@ -83,7 +92,7 @@ var graphs = {
 }
 
 var BellmanFord = {
-    _exploreAndUpdate: function(nodes, visited, fromNode) {
+    _visit: function(nodes, visited, fromNode) {
         var reachablefromNode = nodes.filter(graphs.reachablefromNode(fromNode.id));
         graphs.updateCostIfLower(reachablefromNode, fromNode);
         visited.push(fromNode);
@@ -94,108 +103,78 @@ var BellmanFord = {
             return nodes;
         }
         var nextNode = reachableNotVisited[0];
-        return BellmanFord._exploreAndUpdate(nodes, visited, nextNode);
+        return BellmanFord._visit(nodes, visited, nextNode);
     },
-    shortestToNode: function(graph, toNodeId, edgeWeightCalculator) {
+    _calculateCostsStartingFromNode: function(graph, edgeWeightCalculator, startingNode) {
+        var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
+        if (nodes.length <= 1) {
+            return nodes;
+        }
+        for (var i = 0; i < nodes.length - 1; ++i) {
+            nodes = BellmanFord._visit(nodes, [], nodes.find(graphs.byId(startingNode.id)));
+        }
+        return nodes;
+    },
+    cheapestToNode: function(graph, toNodeId, edgeWeightCalculator) {
         if (!graph.map(graphs.toId).includes(toNodeId)) {
             return [];
         }
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        edgeWeightCalculator = edgeWeightCalculator || graphs.defaultEdgeWeight;
-        var routesByStartingPoint = rootNodes.map(function(root) {
-            var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
-            if (nodes.length <= 1) {
-                return nodes;
-            }
-            for (var i = 0; i < nodes.length - 1; ++i) {
-                nodes = BellmanFord._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(root.id)));
-            }
-            return nodes;
-        });
-
-        var routeWithShortestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
+        var weightedNodesByStartingPoint = rootNodes.map(BellmanFord._calculateCostsStartingFromNode.curry(graph, edgeWeightCalculator));
+        var routeWithShortestPathToNode = weightedNodesByStartingPoint.length === 0 ? [] : weightedNodesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
         return graphs.navigate(routeWithShortestPathToNode, toNodeId, []).reverse();
     },
-    longestToNode: function(graph, toNodeId, edgeWeightCalculator) {
-        edgeWeightCalculator = edgeWeightCalculator || graphs.defaultEdgeWeight;
-        var inverseEdgeWeightCalculator = function(from, to) {
-            return -edgeWeightCalculator(from, to);
-        }
-        return BellmanFord.shortestToNode(graph, toNodeId, inverseEdgeWeightCalculator);
+    costliestToNode: function(graph, toNodeId, edgeWeightCalculator) {
+        // Inverting the edge weights makes the cheapest path search into the costlier
+        return BellmanFord.cheapestToNode(graph, toNodeId, graphs.invertEdgeWeightCalculation(edgeWeightCalculator));
     },
-    longestFromNode: function(graph, fromNodeId, edgeWeightCalculator) {
-        if (!graph.map(graphs.toId).includes(fromNodeId)) {
+    costliestFromNode: function(graph, fromNodeId, edgeWeightCalculator) {
+        var startingNodeInGraph = graph.find(graphs.byId(fromNodeId));
+        if (startingNodeInGraph === undefined) {
             return [];
         }
-
-        edgeWeightCalculator = edgeWeightCalculator || graphs.defaultEdgeWeight;
-        var inverseEdgeWeightCalculator = function(from, to) {
-            return -edgeWeightCalculator(from, to);
+        // Inverting the edge weights makes the cheapest path search into the costlier
+        var weightedNodes = BellmanFord._calculateCostsStartingFromNode(graph, graphs.invertEdgeWeightCalculation(edgeWeightCalculator), startingNodeInGraph);
+        if (weightedNodes.length === 0) {
+            return [];
         }
-        var nodes = graphs.createNodesStructure(graph, inverseEdgeWeightCalculator);
-        if (nodes.length <= 1) {
-            return nodes.map(graphs.toId);
-        }
-        for (var i = 0; i < nodes.length - 1; ++i) {
-            nodes = BellmanFord._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(fromNodeId)));
-        }
-        var mostCostlyNodeToReach = nodes
-            .filter(graphs.finiteCost)
-            .sort(graphs.sortNodesByCost)[0];
-        if (mostCostlyNodeToReach === undefined) {
-            return nodes.map(function(node) {
-                return node.id;
-            });
-        }
-        return graphs.navigate(nodes, mostCostlyNodeToReach.id, []).reverse();
+        // because we inverted the edge weight calculation function, costs are expressed as negative numbers
+        // therefore the one with the lowest cost is the most expensive
+        var mostCostlyNodeToReach = weightedNodes.sort(graphs.sortNodesByCost)[0];
+        return graphs.navigate(weightedNodes, mostCostlyNodeToReach.id, []).reverse();
     },
-    longestPossible: function(graph, edgeWeightCalculator) {
+    costliestPossible: function(graph, edgeWeightCalculator) {
+        //the costliest path necessarily starts from a root node
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        edgeWeightCalculator = edgeWeightCalculator || function(from, to) {
-            return -1;
-        };
 
-        var routesByStartingPoint = rootNodes.map(function(root) {
-            var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
-            if (nodes.length <= 1) {
-                return nodes;
-            }
-            for (var i = 0; i < nodes.length - 1; ++i) {
-                nodes = BellmanFord._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(root.id)));
-            }
-            return nodes;
-        });
-        if (routesByStartingPoint.length === 0) {
+        // Inverting the edge weights makes the cheapest path search into the costlier
+        var weightedNodesByStartingPoint = rootNodes.map(BellmanFord._calculateCostsStartingFromNode.curry(graph, graphs.invertEdgeWeightCalculation(edgeWeightCalculator)));
+        if (weightedNodesByStartingPoint.length === 0) {
             return [];
         }
 
-        var routeWithLongestPathToNode = routesByStartingPoint.sort(function(lhs, rhs) {
-            var lhsMostCostlyNodeNode = lhs
-                .filter(graphs.finiteCost)
-                .sort(graphs.sortNodesByCost)[0];
-            var rhsMostCostlyNodeNode = rhs
-                .filter(graphs.finiteCost)
-                .sort(graphs.sortNodesByCost)[0];
-            return lhsMostCostlyNodeNode.cost - rhsMostCostlyNodeNode.cost;
+        // because we inverted the edge weight calculation function, costs are expressed as negative numbers
+        // therefore the one with the lowest cost is the most expensive
+        var weightedNodesWithCostlierNode = weightedNodesByStartingPoint.map(function(weightedNodes) {
+            return {
+                weightedNodes: weightedNodes,
+                costlierNodeToReach: weightedNodes.sort(graphs.sortNodesByCost)[0]
+            };
+        });
+        var costliestPossible = weightedNodesWithCostlierNode.sort(function(lhs, rhs) {
+            return graphs.sortNodesByCost(lhs.costlierNodeToReach, rhs.costlierNodeToReach);
         })[0];
-        var mostCostlyNodeToReach = routeWithLongestPathToNode
-            .filter(graphs.finiteCost)
-            .sort(graphs.sortNodesByCost)[0];
-        if (mostCostlyNodeToReach === undefined) {
-            return routeWithLongestPathToNode.map(function(node) {
-                return node.id;
-            });
-        }
-        return graphs.navigate(routeWithLongestPathToNode, mostCostlyNodeToReach.id, []).reverse();
+
+        return graphs.navigate(costliestPossible.weightedNodes, costliestPossible.costlierNodeToReach.id, []).reverse();
     }
 }
 
 var Dijkstra = {
-    _exploreAndUpdate: function(nodes, visited, fromNode) {
+    _visit: function(nodes, visited, fromNode) {
         var reachablefromNode = nodes.filter(graphs.reachablefromNode(fromNode.id));
         graphs.updateCostIfLower(reachablefromNode, fromNode);
         visited.push(fromNode);
@@ -206,19 +185,21 @@ var Dijkstra = {
             return nodes;
         }
         var nextNode = graphs.getLowestCostNode(notVisited);
-        return Dijkstra._exploreAndUpdate(nodes, visited, nextNode);
+        return Dijkstra._visit(nodes, visited, nextNode);
     },
-    shortestToNode: function(graph, toNodeId, edgeWeightCalculator) {
+    _calculateCostsStartingFromNode: function(graph, edgeWeightCalculator, startingNode) {
+        var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
+        return Dijkstra._visit(nodes, [], nodes.find(graphs.byId(startingNode.id)));
+    },
+    cheapestToNode: function(graph, toNodeId, edgeWeightCalculator) {
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        edgeWeightCalculator = edgeWeightCalculator || graphs.defaultEdgeWeight;
-        var routesByStartingPoint = rootNodes.map(function(root) {
-            var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
-            return Dijkstra._exploreAndUpdate(nodes, [], nodes.find(graphs.byId(root.id)));
-        });
-
-        var routeWithShortestPathToNode = routesByStartingPoint.length === 0 ? [] : routesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
-        return graphs.navigate(routeWithShortestPathToNode, toNodeId, []).reverse();
+        var weightedNodesByStartingPoint = rootNodes.map(Dijkstra._calculateCostsStartingFromNode.curry(graph,edgeWeightCalculator));
+        if (weightedNodesByStartingPoint.length === 0) {
+            return [];
+        }
+        var weightedNodesWithCheapestRoute = weightedNodesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
+        return graphs.navigate(weightedNodesWithCheapestRoute, toNodeId, []).reverse();
     }
 }
