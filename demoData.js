@@ -202,21 +202,6 @@ var demoGraphs = {
             ["root2", "tip"]
         ]
     },
-    twoRootsOneMissing: {
-        nodes: [
-            { id: "root", timestamp: 2, parents: [] },
-            { id: "tip", timestamp: 4, parents: ["root", "root2"] }
-        ],
-        cheapestToTip: [
-            ["root", "tip"]
-        ],
-        costliestToTip: [
-            ["root", "tip"]
-        ],
-        costliestPossible: [
-            ["root", "tip"]
-        ]
-    },
     twoRootsLongerBranch: {
         nodes: [
             { id: "root", timestamp: 0, parents: [] },
