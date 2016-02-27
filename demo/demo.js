@@ -1,158 +1,171 @@
-//Object.keys(demoGraphs).forEach(function(graphName) {
-//  var demoGraph = demoGraphs[graphName];
-var demoGraph = demoGraphs.crossingBranches;
-var coordinatesForNodes = calculateCoordinates(demoGraph.nodes, 0, 0);
+function pluck(name) {
+    var v, params = Array.prototype.slice.call(arguments, 1);
+    return function(o) {
+        return (typeof(v = o[name]) === 'function' ? v.apply(o, params) : v);
+    };
+}
 
-var graph = {
-    nodes: demoGraph.nodes.map(function(node) {
-        var coords = coordinatesForNodes.find(graphs.byId(node.id));
+function identity(d) {
+    return d;
+}
+
+function adaptGraphToD3Format(rawGraph, canvas, padding) {
+    function createXScaler(nodes, svgWidth, horizontalPadding) {
+        var x_min = d3.min(nodes, function(d) {
+            return d.x;
+        });
+        var x_max = d3.max(nodes, function(d) {
+            return d.x;
+        });
+        return d3.scale.linear()
+            .domain([x_min, x_max])
+            .range([horizontalPadding, svgWidth - horizontalPadding]);
+    }
+
+    function createYScaler(nodes, svgHeight, verticalPadding) {
+        var y_min = d3.min(nodes, function(d) {
+            return d.y;
+        });
+        var y_max = d3.max(nodes, function(d) {
+            return d.y;
+        });
+
+        return d3.scale.linear()
+            .domain([y_min, y_max])
+            .range([svgHeight - verticalPadding, verticalPadding]);
+    }
+
+    var coordinatesForNodes = calculateCoordinates(rawGraph.nodes, 0, 0);
+    var coordsById = d3.map();
+
+
+    coordinatesForNodes.forEach(function(coordinates) {
+        coordsById.set(coordinates.id, coordinates);
+    });
+
+    var xScaler = createXScaler(coordinatesForNodes, canvas.width, padding.horizontal);
+    var yScaler = createYScaler(coordinatesForNodes, canvas.height, padding.vertical);
+
+    var adaptedNodes = rawGraph.nodes.map(function(node) {
         return {
             "id": node.id,
             "fixed": true,
-            "x": coords.x,
-            "y": coords.y
+            "x": xScaler(coordsById.get(node.id).x),
+            "y": yScaler(coordsById.get(node.id).y)
         }
-    }),
-    links: [].concat.apply([], demoGraph.nodes.map(function(node) {
-        return node.parents.map(function(parentId) {
-            return { "source": node.id, "target": parentId }
-        })
-    }))
+    });
+    var adaptedNodeById = d3.map();
+    adaptedNodes.forEach(function(node) {
+        adaptedNodeById.set(node.id, node);
+    });
+
+    return {
+        nodes: adaptedNodes,
+        links: [].concat.apply([], rawGraph.nodes.map(function(node) {
+            return node.parents.map(function(parentId) {
+                return { "source": adaptedNodeById.get(node.id), "target": adaptedNodeById.get(parentId) }
+            })
+        }))
+    }
+
 }
+Object.keys(demoGraphs).forEach(function(graphName) {
+    var demoGraph = demoGraphs[graphName];
+    var canvas = {
+        width: 400,
+        height: 200
+    }
+    var graphPadding = {
+        horizontal: canvas.width * .08,
+        vertical: canvas.height * .15
+    }
 
-var x_max = d3.max(graph.nodes, function(d) {
-    return d.x;
-});
-var y_max = d3.max(graph.nodes, function(d) {
-    return d.y;
-});
+    var graph = adaptGraphToD3Format(demoGraph, canvas, graphPadding);
+    var color = d3.scale.category20();
 
-var width = 800,
-    height = 600;
+    var force = d3.layout.force()
+        .charge(0)
+        .linkDistance(0)
+        .size([canvas.width, canvas.height])
+        .nodes(graph.nodes)
+        .links(graph.links)
+        .start();
 
-var xScaler = d3.scale.linear()
-    .domain([0, x_max])
-    .range([30, width - 30]);
-
-var yScaler = d3.scale.linear()
-    .domain([0, y_max])
-    .range([height - 30, 30]);
+    var svg = d3.select("body").append("svg")
+        .attr("width", canvas.width)
+        .attr("height", canvas.height);
 
 
-var color = d3.scale.category20();
+    //canvas background
+    svg.append("rect")
+        .attr("x", 5)
+        .attr("y", 5)
+        .attr("width", canvas.width - 5)
+        .attr("height", canvas.height - 5)
+        .attr("fill", "#EEE");
 
-var force = d3.layout.force()
-    .charge(-120)
-    .linkDistance(30)
-    .size([width, height]);
+    var nodeRadius = 8;
 
-var svg = d3.select("body").append("svg")
-    .attr("width", width)
-    .attr("height", height);
+    //draw actual svg elements
+    var nodes = svg.selectAll(".node")
+        .data(graph.nodes)
+        .enter().append("circle")
+        .attr("class", "node")
+        .attr("r", nodeRadius)
+        .attr("cx", pluck("x"))
+        .attr("cy", pluck("y"))
+        .style("fill", function(d) {
+            return color(d.group);
+        })
+        .call(force.drag);
 
-svg.append("defs").selectAll("marker")
-    .data(["end"])
-    .enter().append("marker")
-    .attr("id", function(d) {
-        return d;
-    })
-    .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 15)
-    .attr("refY", -1.5)
-    .attr("markerWidth", 6)
-    .attr("markerHeight", 6)
-    .attr("orient", "auto")
-    .append("path")
-    .attr("d", "M0,-5L10,0L0,5");
+    var nodeLabels = svg.append("g")
+        .selectAll("text")
+        .data(graph.nodes)
+        .enter()
+        .append("text")
+        .attr("x", pluck("x"))
+        .attr("y", function(d) {
+            return d.y + nodeRadius
+        })
+        .attr("dy", ".75em")
+        .attr("text-anchor", "middle")
+        .text(pluck("id"));
 
-svg.append("rect")
-    .attr("x", 5)
-    .attr("y", 5)
-    .attr("width", width - 10)
-    .attr("height", height - 10)
-    .attr("fill", "#EEE");
-
-var nodeById = d3.map();
-
-graph.nodes.forEach(function(node) {
-    nodeById.set(node.id, node);
-});
-
-graph.links.forEach(function(link) {
-    link.source = nodeById.get(link.source);
-    link.target = nodeById.get(link.target);
-});
-
-var nodeRadius = 8;
-force
-    .nodes(graph.nodes)
-    .links(graph.links)
-    .start();
-
-var link = svg.selectAll(".link")
-    .data(graph.links)
-    .enter().append("line")
-    .attr("class", "link")
-    .attr("marker-end", "url(#end)")
-    
-
-var node = svg.selectAll(".node")
-    .data(graph.nodes)
-    .enter().append("circle")
-    .attr("class", "node")
-    .attr("r", nodeRadius)
-    .attr("cx", function(d) {
-        return d.x;
-    })
-    .attr("cy", function(d) {
-        return d.y;
-    })
-    .style("fill", function(d) {
-        return color(d.group);
-    })
-    .call(force.drag);
-
-node.append("title")
-    .text(function(d) {
-        return d.id;
-    });
-
-var text = svg.append("g")
-    .selectAll("text")
-    .data(graph.nodes)
-    .enter()
-    .append("text")
-    .text(function(d) {
-        return d.id;
-    });
-
-force.on("tick", function() {
-    link.attr("x1", function(d) {
-            return xScaler(d.source.x);
+    var links = svg.selectAll(".link")
+        .data(graph.links)
+        .enter().append("line")
+        .attr("class", "link")
+        .attr("marker-end", "url(#arrow)")
+        .attr("x1", function(d) {
+            return d.source.x;
         })
         .attr("y1", function(d) {
-            return yScaler(d.source.y);
+            return d.source.y;
         })
         .attr("x2", function(d) {
-            return xScaler(d.target.x)+nodeRadius;
+            return d.target.x + nodeRadius;
         })
         .attr("y2", function(d) {
-            return yScaler(d.target.y);
-        });
-        
-    text.attr("x", function(d) {
-            return xScaler(d.x);
+            return d.target.y;
         })
-        .attr("y", function(d) {
-            return yScaler(d.y);
-        });
 
-    node.attr("cx", function(d) {
-            return xScaler(d.x);
-        })
-        .attr("cy", function(d) {
-            return yScaler(d.y);
-        });
+    var lineArrow = svg.append("defs").selectAll("marker")
+        .data(["arrow"])
+        .enter().append("marker")
+        .attr("id", identity)
+        .attr("viewBox", "0 0 10 10")
+        .attr("refX", nodeRadius)
+        .attr("refY", 5)
+        .attr("markerUnits", "strokeWidth")
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M 0 0 L 10 5 L 0 10 z");
+
+    force.on("tick", function() {
+
+    });
+
 });
-
-//});
