@@ -249,5 +249,31 @@ var demoGraphs = {
         costliestPossible: [
             ["root", "b1", "b2", "b3","m3", "m4", "m5", "m6", "m7"]
         ]
+    },
+    overlapping: {
+        nodes: [
+            { id: "root", timestamp: 0, parents: [] },
+            { id: "m1", timestamp: 0, parents: ["root"] },
+            { id: "m2", timestamp: 0, parents: ["m1"] },
+            { id: "m3", timestamp: 0, parents: ["m2"] },
+            { id: "m4", timestamp: 0, parents: ["m3"] },
+            { id: "m5", timestamp: 0, parents: ["m4", "b2"] },
+            { id: "m6", timestamp: 0, parents: ["m5", "c2"] },
+            { id: "tip", timestamp: 0, parents: ["m6"] },
+            { id: "b1", timestamp: 0, parents: ["m1"] },
+            { id: "b2", timestamp: 0, parents: ["b1"] },
+            { id: "c1", timestamp: 0, parents: ["m2"] },
+            { id: "c2", timestamp: 0, parents: ["c1"] },
+        ],
+        cheapestToTip: [
+            ["root","m1","m2","c1","c2","m6","tip"],
+            ["root","m1","b1","b2","m5","m6","tip"],
+        ],
+        costliestToTip: [
+            ["root","m1","m2","m3","m4","m5","m6","tip"]
+        ],
+        costliestPossible: [
+            ["root","m1","m2","m3","m4","m5","m6","tip"]
+        ]
     }
 }

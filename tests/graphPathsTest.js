@@ -75,7 +75,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
     });
 });
 
-QUnit.module("BellmanFord.costliestToNode");
+QUnit.module("BellmanFord.costliestToTip");
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
@@ -97,7 +97,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
     });
 });
 
-QUnit.module("BellmanFord.costliestFromNode");
+QUnit.module("BellmanFord.costliestFromRoot");
 Object.keys(demoGraphs).forEach(function(graphName) {
     var graph = demoGraphs[graphName];
     if (!graph.nodes.map(graphs.toId).includes("root")) {
