@@ -1,3 +1,6 @@
+var xStep = 15;
+var yStep = 10;
+
 function positionAncestors(nodes, coords, connectedToNodeId, alreadyPositioned, positionOnDirectrix) {
     var subGraph = nodes.filter(function(node) {
         return node.id === connectedToNodeId || !alreadyPositioned.includes(node.id);
@@ -19,7 +22,7 @@ function positionAncestors(nodes, coords, connectedToNodeId, alreadyPositioned, 
         return []; //no new nodes were positioned
     }
 
-    var x = coords.find(graphs.byId(connectedToNodeId)).x - 5;
+    var x = coords.find(graphs.byId(connectedToNodeId)).x - xStep/2;
     var positioning = [].concat(longestAncestorsChain);
     for (var nodeIdx in longestAncestorsChain) {
         var nodeId = longestAncestorsChain[nodeIdx];
@@ -29,13 +32,13 @@ function positionAncestors(nodes, coords, connectedToNodeId, alreadyPositioned, 
         coords.find(graphs.byId(currentNode.id)).x = x;
         var onDirectrix = positionOnDirectrix;
         do {
-            onDirectrix += 10;
+            onDirectrix += yStep;
             var positionedAncestors = positionAncestors(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
             positioning = positioning.concat(positionedAncestors);
             var positionedDescendants = positionDescendants(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
             positioning = positioning.concat(positionedDescendants);
         } while (positionedAncestors.length !== 0 && positionedDescendants !== 0)
-        x -= 10;
+        x -= xStep;
     }
     return positioning;
 }
@@ -59,7 +62,7 @@ function positionDescendants(nodes, coords, connectedToNodeId, alreadyPositioned
         return []; //no new nodes were positioned
     }
 
-    var x = coords.find(graphs.byId(connectedToNodeId)).x + 5;
+    var x = coords.find(graphs.byId(connectedToNodeId)).x +xStep/2;
     var positioning = [].concat(longestDescendantsChain);
     for (var nodeIdx in longestDescendantsChain) {
         var nodeId = longestDescendantsChain[nodeIdx];
@@ -69,13 +72,13 @@ function positionDescendants(nodes, coords, connectedToNodeId, alreadyPositioned
         coords.find(graphs.byId(currentNode.id)).x = x;
         var onDirectrix = positionOnDirectrix;
         do {
-            onDirectrix += 10;
+            onDirectrix += yStep;
             var positionedAncestors = positionAncestors(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
             positioning = positioning.concat(positionedAncestors);
             var positionedDescendants = positionDescendants(nodes, coords, currentNode.id, alreadyPositioned.concat(positioning), onDirectrix);
             positioning = positioning.concat(positionedDescendants);
         } while (positionedAncestors.length !== 0 && positionedDescendants !== 0)
-        x += 10;
+        x += xStep;
     }
     return positioning;
 }
@@ -96,7 +99,7 @@ function calculateCoordinates(nodes, currentDirectrix, startingPoint) {
         var currentNode = nodes.find(graphs.byId(nodeId));
         coords.find(graphs.byId(currentNode.id)).y = currentDirectrix;
         coords.find(graphs.byId(currentNode.id)).x = x;
-        x += 10;
+        x += xStep;
     }
     // then navigate backwards from the last node and position 
     // ancestors and descendants along parallel directrixes
@@ -104,8 +107,8 @@ function calculateCoordinates(nodes, currentDirectrix, startingPoint) {
     var alreadyVisited = [].concat(costliestPossiblePath);
     for (var nodeIdx in inversePath) {
         var nodeId = inversePath[nodeIdx];
-        alreadyVisited = alreadyVisited.concat(positionAncestors(nodes, coords, nodeId, alreadyVisited, currentDirectrix + 10));
-        alreadyVisited = alreadyVisited.concat(positionDescendants(nodes, coords, nodeId, alreadyVisited, currentDirectrix + 10));
+        alreadyVisited = alreadyVisited.concat(positionAncestors(nodes, coords, nodeId, alreadyVisited, currentDirectrix + yStep));
+        alreadyVisited = alreadyVisited.concat(positionDescendants(nodes, coords, nodeId, alreadyVisited, currentDirectrix + yStep));
     }
     return coords;
 }
