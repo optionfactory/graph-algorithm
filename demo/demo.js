@@ -153,7 +153,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         .attr("d", function(d) {
             var path = "";
             // move to starting node's center
-            path += "M " + d.source.x + " " + d.source.y + " ";
+            path += "M " + (d.source.x - nodeRadius) + " " + d.source.y + " ";
             // cubic Bezier curve control points. magic number here
             path += "C " + (d.source.x - 30) + " " + d.source.y + " ";
             path += ", " + (d.target.x + 30) + " " + d.target.y + " ";
