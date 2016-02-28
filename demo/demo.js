@@ -112,7 +112,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         .enter()
         .append("text")
         .attr("class", "nodeLabel")
-        .attr("x", canvas.width/2)
+        .attr("x", canvas.width / 2)
         .attr("y", "0")
         .attr("dy", "1.25em")
         .attr("text-anchor", "middle")
@@ -147,21 +147,20 @@ Object.keys(demoGraphs).forEach(function(graphName) {
 
     var links = svg.selectAll(".link")
         .data(graph.links)
-        .enter().append("line")
+        .enter().append("path")
         .attr("class", "link")
         .attr("marker-end", "url(#arrow)")
-        .attr("x1", function(d) {
-            return d.source.x;
-        })
-        .attr("y1", function(d) {
-            return d.source.y;
-        })
-        .attr("x2", function(d) {
-            return d.target.x + nodeRadius;
-        })
-        .attr("y2", function(d) {
-            return d.target.y;
-        })
+        .attr("d", function(d) {
+            var path = "";
+            // move to starting node's center
+            path += "M " + d.source.x + " " + d.source.y + " ";
+            // cubic Bezier curve control points. magic number here
+            path += "C " + (d.source.x - 30) + " " + d.source.y + " ";
+            path += ", " + (d.target.x + 30) + " " + d.target.y + " ";
+            // final destination (just right of the destination node)
+            path += ", " + (d.target.x + nodeRadius) + " " + d.target.y + " ";
+            return path;
+        });
 
     var lineArrow = svg.append("defs").selectAll("marker")
         .data(["arrow"])

@@ -15,4 +15,5 @@ body, html {
 .link {
   stroke: #999;
   stroke-opacity: .6;
+  fill:none;
 }
