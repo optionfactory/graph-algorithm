@@ -45,9 +45,21 @@ var directrixSelectionStrategies = {
             }
             return current;
         }
+    },
+    incrementDecrementY: function(baseline, increment) {
+        return function(alreadyTried) {
+            function getOffset(index) {
+                //0, 1, -1, 2, -2, 3, ...
+                return Math.pow(-1, index + 1) * Math.ceil(index / 2);
+            }
+            var offset = getOffset(alreadyTried.length);
+            return baseline+offset*increment;
+        }
     }
 }
 
+// works only when chunks are positioned horizontally or vertically,
+// unreliable on diagonal positioning
 function doCollide(lhsCoordinatesChunk, rhsCoordinatesChunk) {
     function getMinMax(coordinatesChunk) {
         var validCoordinates = coordinatesChunk.filter(function(coords) {
@@ -68,21 +80,27 @@ function doCollide(lhsCoordinatesChunk, rhsCoordinatesChunk) {
             max: { x: maxX, y: maxY }
         }
     }
-    lhs = getMinMax(lhsCoordinatesChunk);
-    rhs = getMinMax(rhsCoordinatesChunk);
+    if (lhsCoordinatesChunk.directrix !== rhsCoordinatesChunk.directrix) {
+        return false;
+    }
+    lhs = getMinMax(lhsCoordinatesChunk.chunkPositions);
+    rhs = getMinMax(rhsCoordinatesChunk.chunkPositions);
     var disjointedOnX = lhs.max.x < rhs.min.x || lhs.min.x > rhs.max.x;
     var disjointedOnY = lhs.max.y < rhs.min.y || lhs.min.y > rhs.max.y;
-    return !(disjointedOnX || disjointedOnY);
+    return !disjointedOnX && !disjointedOnY;
 }
 
-function positionNodes(distributionStrategy, directrixSelectionStrategy, nodes, chainToPosition, previousChunksPositions) {
-    var nodesToBePositioned = chainToPosition.map(function(nodeId) {
+function positionNodes(distributionStrategy, directrixSelectionStrategy, nodes, chainToBePositioned, previousChunksPositions) {
+    var nodesToBePositioned = chainToBePositioned.map(function(nodeId) {
         return nodes.find(graphs.byId(nodeId));
     });
     var attemptedDirectrixes = [];
     while (true) {
         var directrix = directrixSelectionStrategy(attemptedDirectrixes);
-        var currentChunkPositions = distributionStrategy(nodesToBePositioned, directrix);
+        var currentChunkPositions = {
+            directrix: directrix,
+            chunkPositions: distributionStrategy(nodesToBePositioned, directrix)
+        };
         //search for colliding nodes (among those already placed)
         var thereAreCollisions = previousChunksPositions.some(function(previousChunkPosition) {
             return doCollide(previousChunkPosition, currentChunkPositions);
@@ -106,58 +124,58 @@ function removeUsedPaths(nodes, pathToRemove) {
     }
 }
 
-function positionAncestorsAndDescendants(nodes, nodeId, previousChunksPosition) {
-    var node = nodes.find(graphs.byId(nodeId));
+function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, previousChunksPosition) {
+    var node = allNodes.find(graphs.byId(ofNodeId));
     var newChunksPositions = [];
     do {
-        var longestAncestorsChain = BellmanFord.costliestToNode(nodes, nodeId);
-        removeUsedPaths(nodes, longestAncestorsChain);
-        longestAncestorsChain = longestAncestorsChain.filter(function(nId) {
-            var n = nodes.find(graphs.byId(nId));
-            return n.x === undefined && n.y === undefined;
+        var longestAncestorsChain = BellmanFord.costliestToNode(allNodes, ofNodeId);
+        removeUsedPaths(allNodes, longestAncestorsChain);
+        longestAncestorsChain = longestAncestorsChain.filter(function(ancestorId) {
+            var ancestorNode = allNodes.find(graphs.byId(ancestorId));
+            return ancestorNode.x === undefined && ancestorNode.y === undefined;
         });
         var anchestorsChunk = positionNodes(
             distributionStrategies.distributeEndingAt(node.x - xStep / 2, xStep),
-            directrixSelectionStrategies.alwaysIncrementY(0, yStep),
-            nodes,
+            directrixSelectionStrategies.incrementDecrementY(currentDirectrix, yStep),
+            allNodes,
             longestAncestorsChain,
             previousChunksPosition
         );
-        if (anchestorsChunk.length > 0) {
+        if (anchestorsChunk.chunkPositions.length > 0) {
             newChunksPositions.push(anchestorsChunk);
         }
-        var longestDescendantsChain = BellmanFord.costliestFromNode(nodes, nodeId);
-        removeUsedPaths(nodes, longestDescendantsChain);
-        longestDescendantsChain = longestDescendantsChain.filter(function(nId) {
-            var n = nodes.find(graphs.byId(nId));
-            return n.x === undefined && n.y === undefined;
+        var longestDescendantsChain = BellmanFord.costliestFromNode(allNodes, ofNodeId);
+        removeUsedPaths(allNodes, longestDescendantsChain);
+        longestDescendantsChain = longestDescendantsChain.filter(function(descendantId) {
+            var descendantNode = allNodes.find(graphs.byId(descendantId));
+            return descendantNode.x === undefined && descendantNode.y === undefined;
         });
         var descendantsChunk = positionNodes(
             distributionStrategies.distributeStartingFrom(node.x + xStep / 2, xStep),
-            directrixSelectionStrategies.alwaysIncrementY(0, yStep),
-            nodes,
+            directrixSelectionStrategies.incrementDecrementY(currentDirectrix, yStep),
+            allNodes,
             longestDescendantsChain,
             previousChunksPosition.concat(newChunksPositions)
         );
-        if (descendantsChunk.length > 0) {
+        if (descendantsChunk.chunkPositions.length > 0) {
             newChunksPositions.push(descendantsChunk);
         }
 
         longestAncestorsChain.forEach(function(ancestor) {
             newChunksPositions = newChunksPositions.concat(
-                positionAncestorsAndDescendants(nodes, ancestor, previousChunksPosition.concat(newChunksPositions))
+                positionAncestorsAndDescendants(allNodes, ancestor, anchestorsChunk.directrix, previousChunksPosition.concat(newChunksPositions))
             );
         })
         longestDescendantsChain.forEach(function(descendant) {
             newChunksPositions = newChunksPositions.concat(
-                positionAncestorsAndDescendants(nodes, descendant, previousChunksPosition.concat(newChunksPositions))
+                positionAncestorsAndDescendants(allNodes, descendant, descendantsChunk.directrix, previousChunksPosition.concat(newChunksPositions))
             );
         })
     } while (longestAncestorsChain.length !== 0 || longestDescendantsChain.length !== 0)
     return newChunksPositions;
 }
 
-function calculateCoordinates(graph, currentDirectrix, startingPoint) {
+function calculateCoordinates(graph, startingPoint, mainDirectrix) {
     var nodes = graph.nodes.map(function(node) {
         return {
             id: node.id,
@@ -170,19 +188,22 @@ function calculateCoordinates(graph, currentDirectrix, startingPoint) {
     var costliestPossiblePath = BellmanFord.costliestPossible(nodes);
     removeUsedPaths(nodes, costliestPossiblePath);
 
+    var allChunksPositions = [];
     var mainChunkPositions = positionNodes(
-        distributionStrategies.distributeStartingFrom(0, xStep),
-        directrixSelectionStrategies.alwaysIncrementY(0, yStep),
+        distributionStrategies.distributeStartingFrom(startingPoint || 0, xStep),
+        directrixSelectionStrategies.incrementDecrementY(mainDirectrix || 0, yStep),
         nodes,
-        costliestPossiblePath, []
+        costliestPossiblePath,
+        allChunksPositions
     );
 
-    var allChunksPositions = [];
     allChunksPositions.push(mainChunkPositions);
     // then navigate backwards from the last node and position 
     // ancestors and descendants along parallel directrixes
     costliestPossiblePath.reverse().forEach(function(nodeId) {
-        allChunksPositions = allChunksPositions.concat(positionAncestorsAndDescendants(nodes, nodeId, allChunksPositions));
+        allChunksPositions = allChunksPositions.concat(
+            positionAncestorsAndDescendants(nodes, nodeId, mainChunkPositions.directrix, allChunksPositions)
+        );
     });
     return nodes;
 }
