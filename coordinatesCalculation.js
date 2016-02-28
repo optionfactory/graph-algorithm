@@ -1,6 +1,9 @@
 var xStep = 10;
 var yStep = 10;
 
+
+
+
 var distributionStrategies = {
     distributeStartingFrom: function(start, increment) {
         return function(nodes, directrix) {
@@ -45,37 +48,30 @@ var directrixSelectionStrategies = {
     }
 }
 
-function doCollide(lhs, rhs) {
-    var validLhs = lhs.filter(function(coords) {
-        return coords.x !== undefined && coords.y !== undefined;
-    });
-    var validRhs = rhs.filter(function(coords) {
-        return coords.x !== undefined && coords.y !== undefined;
-    });
-    var allLhsY = validLhs.map(function(coords) {
-        return coords.y;
-    });
-    var minLhsY = Math.min(...allLhsY);
-    var maxLhsY = Math.max(...allLhsY);
-    var allLhsX = validLhs.map(function(coords) {
-        return coords.x;
-    });
-    var minLhsX = Math.min(...allLhsX);
-    var maxLhsX = Math.max(...allLhsX);
-
-    var allRhsY = validRhs.map(function(coords) {
-        return coords.y;
-    });
-    var minRhsY = Math.min(...allRhsY);
-    var maxRhsY = Math.max(...allRhsY);
-    var allRhsX = validRhs.map(function(coords) {
-        return coords.x;
-    });
-    var minRhsX = Math.min(...allRhsX);
-    var maxRhsX = Math.max(...allRhsX);
-
-    var disjointedOnX = maxLhsX < minRhsX || minLhsX > maxRhsX;
-    var disjointedOnY = maxLhsY < minRhsY || minLhsY > maxRhsY;
+function doCollide(lhsCoordinatesChunk, rhsCoordinatesChunk) {
+    function getMinMax(coordinatesChunk) {
+        var validCoordinates = coordinatesChunk.filter(function(coords) {
+            return coords.x !== undefined && coords.y !== undefined;
+        });
+        var allX = validCoordinates.map(function(coords) {
+            return coords.x;
+        });
+        var minX = Math.min(...allX);
+        var maxX = Math.max(...allX);
+        var allY = validCoordinates.map(function(coords) {
+            return coords.y;
+        });
+        var minY = Math.min(...allY);
+        var maxY = Math.max(...allY);
+        return {
+            min: { x: minX, y: minY },
+            max: { x: maxX, y: maxY }
+        }
+    }
+    lhs = getMinMax(lhsCoordinatesChunk);
+    rhs = getMinMax(rhsCoordinatesChunk);
+    var disjointedOnX = lhs.max.x < rhs.min.x || lhs.min.x > rhs.max.x;
+    var disjointedOnY = lhs.max.y < rhs.min.y || lhs.min.y > rhs.max.y;
     return !(disjointedOnX || disjointedOnY);
 }
 
