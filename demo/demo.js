@@ -89,7 +89,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         .size([canvas.width, canvas.height])
         .nodes(graph.nodes)
         .links(graph.links)
-        .start();
+   //     .start(); //no need to start the simulation, as all points are fixed
 
     var svg = d3.select("body").append("svg")
         .attr("width", canvas.width)
@@ -106,7 +106,8 @@ Object.keys(demoGraphs).forEach(function(graphName) {
 
     var nodeRadius = 8;
 
-    var nodeLabels = svg.append("g")
+    //graph title
+    svg.append("g")
         .selectAll(".title")
         .data([graphName])
         .enter()
@@ -139,7 +140,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         .attr("class", "nodeLabel")
         .attr("x", pluck("x"))
         .attr("y", function(d) {
-            return d.y + nodeRadius
+            return d.y + nodeRadius;
         })
         .attr("dy", ".75em")
         .attr("text-anchor", "middle")
@@ -162,7 +163,8 @@ Object.keys(demoGraphs).forEach(function(graphName) {
             return path;
         });
 
-    var lineArrow = svg.append("defs").selectAll("marker")
+    //line ending (arrow symbol)
+    svg.append("defs").selectAll("marker")
         .data(["arrow"])
         .enter().append("marker")
         .attr("id", identity)
@@ -176,8 +178,9 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         .append("path")
         .attr("d", "M 0 0 L 10 5 L 0 10 z");
 
-    force.on("tick", function() {
+//no need to start the simulation, as all points are fixed
+/*    force.on("tick", function() {
 
     });
-
+*/
 });
