@@ -312,11 +312,9 @@ var demoGraphs = {
             { id: "b5", timestamp: 0, parents: ["b4"] },
         ],
         cheapestToTip: [
-            ["root", "m1", "a1", "a3", "m4", "a4", "tip"],
-            ["root","m1","m2","m3","m4","a4","tip"]
-        ],
+            ["root","m1","m2","m3","a4","tip"]        ],
         costliestToTip: [
-            ["root", "b1", "b2", "b3","m3", "m4", "a4", "tip"]
+            ["root","b1","b2","b3","m3","a4","tip"]
         ],
         costliestPossible: [
             ["root", "b1", "b2", "b3","m3", "m4", "m5", "m6", "m7"]
