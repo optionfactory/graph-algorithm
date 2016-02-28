@@ -35,7 +35,7 @@ function adaptGraphToD3Format(rawGraph, canvas, padding) {
             .range([svgHeight - verticalPadding, verticalPadding]);
     }
 
-    var coordinatesForNodes = calculateCoordinates(rawGraph.nodes, 0, 0);
+    var coordinatesForNodes = calculateCoordinates(rawGraph);
     var coordsById = d3.map();
 
 
@@ -77,7 +77,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
     }
     var graphPadding = {
         horizontal: canvas.width * .08,
-        vertical: canvas.height * .15
+        vertical: canvas.height * .25
     }
 
     var graph = adaptGraphToD3Format(demoGraph, canvas, graphPadding);
@@ -106,6 +106,18 @@ Object.keys(demoGraphs).forEach(function(graphName) {
 
     var nodeRadius = 8;
 
+    var nodeLabels = svg.append("g")
+        .selectAll(".title")
+        .data([graphName])
+        .enter()
+        .append("text")
+        .attr("class", "nodeLabel")
+        .attr("x", canvas.width/2)
+        .attr("y", "0")
+        .attr("dy", "1.25em")
+        .attr("text-anchor", "middle")
+        .text(identity);
+
     //draw actual svg elements
     var nodes = svg.selectAll(".node")
         .data(graph.nodes)
@@ -120,10 +132,11 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         .call(force.drag);
 
     var nodeLabels = svg.append("g")
-        .selectAll("text")
+        .selectAll(".nodeLabel")
         .data(graph.nodes)
         .enter()
         .append("text")
+        .attr("class", "nodeLabel")
         .attr("x", pluck("x"))
         .attr("y", function(d) {
             return d.y + nodeRadius
