@@ -161,7 +161,7 @@ function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, p
             newChunksPositions.push(descendantsChunk);
         }
 
-        longestAncestorsChain.forEach(function(ancestor) {
+        longestAncestorsChain.reverse().forEach(function(ancestor) {
             newChunksPositions = newChunksPositions.concat(
                 positionAncestorsAndDescendants(allNodes, ancestor, anchestorsChunk.directrix, previousChunksPosition.concat(newChunksPositions))
             );
