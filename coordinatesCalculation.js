@@ -53,7 +53,7 @@ var directrixSelectionStrategies = {
                 return Math.pow(-1, index + 1) * Math.ceil(index / 2);
             }
             var offset = getOffset(alreadyTried.length);
-            return baseline+offset*increment;
+            return baseline + offset * increment;
         }
     }
 }
@@ -122,6 +122,39 @@ function removeUsedPaths(nodes, pathToRemove) {
             toNode.parents.splice(removeIndex, 1);
         }
     }
+}
+
+function removeIfPresent(array, elementToRemove) {
+    var removeIndex = array.indexOf(elementToRemove);
+    if (removeIndex !== -1) {
+        array.splice(removeIndex, 1);
+    }
+}
+
+function navigateForwardAndDetachChunk(nodes, pathToExplore, startingPoint) {
+    for (var i = 0; i < pathToExplore.length - 1; ++i) {
+        var fromNodeId = pathToExplore[i];
+        var toNodeId = pathToExplore[i + 1];
+        var toNode = nodes.find(graphs.byId(toNodeId));
+        removeIfPresent(toNode.parents, fromNodeId);
+        if (toNode.x !== undefined && toNode.y !== undefined) {
+            return pathToExplore.slice(1, i+1);
+        }
+    }
+    return pathToExplore.slice(1);
+}
+
+function navigateBAckwardsAndDetachChunk(nodes, pathToExplore, endingPoint) {
+    for (var i = pathToExplore.length; i > 1; --i) {
+        var fromNodeId = pathToExplore[i - 1];
+        var toNodeId = pathToExplore[i];
+        var toNode = nodes.find(graphs.byId(toNodeId));
+        removeIfPresent(toNode.parents, fromNodeId);
+        if (toNode.x !== undefined && toNode.y !== undefined) {
+            return pathToExplore.slice(1, i);
+        }
+    }
+    return pathToExplore.slice(1);
 }
 
 function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, previousChunksPosition) {
