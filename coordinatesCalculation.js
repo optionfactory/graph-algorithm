@@ -1,11 +1,12 @@
-var xStep = 10;
-var yStep = 10;
+var alongDirectrixStep = 10;
+var betweenDirectrixesStep = 10;
+
 
 var distributionStrategies = {
-    distributeStartingFrom: function(start, increment) {
+    horizontalStartingFrom: function(startNode, increment) {
         return function(nodes, directrix, parentDirectrix) {
             var chunkPositions = [];
-            var current = start;
+            var current = startNode.x;
             for (var nodeIdx in nodes) {
                 var node = nodes[nodeIdx];
                 node.x = current + (directrix === parentDirectrix ? increment : increment / 2);
@@ -16,9 +17,9 @@ var distributionStrategies = {
             return chunkPositions;
         }
     },
-    distributeEndingAt: function(end, increment) {
+    horizontalEndingAt: function(endNode, increment) {
         return function(nodes, directrix, parentDirectrix) {
-            var current = end;
+            var current = endNode.x;
             var chunkPositions = [];
             var reversed = [].concat(nodes).reverse();
             for (var nodeIdx in reversed) {
@@ -34,7 +35,7 @@ var distributionStrategies = {
 }
 
 var directrixSelectionStrategies = {
-    alwaysIncrementY: function(increment) {
+    incrementalVertical: function(increment) {
         return function(baseline, alreadyTried) {
             var current = baseline;
             while (alreadyTried.includes(current)) {
@@ -43,7 +44,7 @@ var directrixSelectionStrategies = {
             return current;
         }
     },
-    incrementDecrementY: function(increment) {
+    flipFlopVertical: function(increment) {
         return function(baseline, alreadyTried) {
             function getOffset(index) {
                 //0, 1, -1, 2, -2, 3, ...
@@ -53,6 +54,12 @@ var directrixSelectionStrategies = {
             return baseline + offset * increment;
         }
     }
+}
+
+var default_configuration = {
+    directrixSelectionStrategy: directrixSelectionStrategies.flipFlopVertical,
+    forwardNodeDistributionStrategy: distributionStrategies.horizontalStartingFrom,
+    backwardsNodeDistributionStrategy: distributionStrategies.horizontalEndingAt
 }
 
 // works only when chunks are positioned horizontally or vertically,
@@ -162,15 +169,15 @@ function navigateBackwardsAndDetachChunk(nodes, pathToExplore, endingPoint) {
     return finalChain.reverse();
 }
 
-function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, previousChunksPosition) {
+function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, previousChunksPosition, configuration) {
     var node = allNodes.find(graphs.byId(ofNodeId));
     var newChunksPositions = [];
     do {
         var longestAncestorsChain = BellmanFord.costliestToNode(allNodes, ofNodeId);
         var longestValidAncestorsChain = navigateBackwardsAndDetachChunk(allNodes, longestAncestorsChain, ofNodeId);
         var anchestorsChunk = positionNodes(
-            distributionStrategies.distributeEndingAt(node.x, xStep),
-            directrixSelectionStrategies.incrementDecrementY(yStep),
+            configuration.backwardsNodeDistributionStrategy(node, alongDirectrixStep),
+            configuration.directrixSelectionStrategy(betweenDirectrixesStep),
             allNodes,
             longestValidAncestorsChain,
             previousChunksPosition,
@@ -182,8 +189,8 @@ function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, p
         var longestDescendantsChain = BellmanFord.costliestFromNode(allNodes, ofNodeId);
         var longestValidDescendantsChain = navigateForwardAndDetachChunk(allNodes, longestDescendantsChain, ofNodeId);
         var descendantsChunk = positionNodes(
-            distributionStrategies.distributeStartingFrom(node.x, xStep),
-            directrixSelectionStrategies.incrementDecrementY(yStep),
+            configuration.forwardNodeDistributionStrategy(node, alongDirectrixStep),
+            configuration.directrixSelectionStrategy(betweenDirectrixesStep),
             allNodes,
             longestValidDescendantsChain,
             previousChunksPosition.concat(newChunksPositions),
@@ -195,19 +202,19 @@ function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, p
 
         longestValidAncestorsChain.reverse().forEach(function(ancestor) {
             newChunksPositions = newChunksPositions.concat(
-                positionAncestorsAndDescendants(allNodes, ancestor, anchestorsChunk.directrix, previousChunksPosition.concat(newChunksPositions))
+                positionAncestorsAndDescendants(allNodes, ancestor, anchestorsChunk.directrix, previousChunksPosition.concat(newChunksPositions), configuration)
             );
         })
         longestValidDescendantsChain.forEach(function(descendant) {
             newChunksPositions = newChunksPositions.concat(
-                positionAncestorsAndDescendants(allNodes, descendant, descendantsChunk.directrix, previousChunksPosition.concat(newChunksPositions))
+                positionAncestorsAndDescendants(allNodes, descendant, descendantsChunk.directrix, previousChunksPosition.concat(newChunksPositions), configuration)
             );
         })
     } while (longestValidAncestorsChain.length !== 0 || longestValidDescendantsChain.length !== 0)
     return newChunksPositions;
 }
 
-function calculateCoordinates(graph, startingPoint, mainDirectrix) {
+function calculateCoordinates(graph, startingPoint, mainDirectrix, configuration) {
     var nodes = graph.nodes.map(function(node) {
         return {
             id: node.id,
@@ -217,13 +224,14 @@ function calculateCoordinates(graph, startingPoint, mainDirectrix) {
             y: undefined
         }
     });
+    configuration = configuration || default_configuration;
     var costliestPossiblePath = BellmanFord.costliestPossible(nodes);
     navigateForwardAndDetachChunk(nodes, costliestPossiblePath, costliestPossiblePath[0]);
 
     var allChunksPositions = [];
     var mainChunkPositions = positionNodes(
-        distributionStrategies.distributeStartingFrom(startingPoint || 0, xStep),
-        directrixSelectionStrategies.incrementDecrementY(yStep),
+        configuration.forwardNodeDistributionStrategy(startingPoint || { x: 0, y: 0 }, alongDirectrixStep),
+        configuration.directrixSelectionStrategy(betweenDirectrixesStep),
         nodes,
         costliestPossiblePath,
         allChunksPositions,
@@ -235,7 +243,7 @@ function calculateCoordinates(graph, startingPoint, mainDirectrix) {
     // ancestors and descendants along parallel directrixes
     costliestPossiblePath.reverse().forEach(function(nodeId) {
         allChunksPositions = allChunksPositions.concat(
-            positionAncestorsAndDescendants(nodes, nodeId, mainChunkPositions.directrix, allChunksPositions)
+            positionAncestorsAndDescendants(nodes, nodeId, mainChunkPositions.directrix, allChunksPositions, configuration)
         );
     });
     return nodes;
