@@ -31,11 +31,41 @@ var distributionStrategies = {
             }
             return chunkPositions;
         }
+    },
+    verticalStartingFrom: function(startNode, increment) {
+        return function(nodes, directrix, parentDirectrix) {
+            var chunkPositions = [];
+            var current = startNode.y;
+            for (var nodeIdx in nodes) {
+                var node = nodes[nodeIdx];
+                node.y = current + (directrix === parentDirectrix ? increment : increment / 2);
+                node.x = directrix;
+                chunkPositions.push({ x: node.x, y: node.y });
+                current += increment;
+            }
+            return chunkPositions;
+        }
+    },
+    verticalEndingAt: function(endNode, increment) {
+        return function(nodes, directrix, parentDirectrix) {
+            var current = endNode.y;
+            var chunkPositions = [];
+            var reversed = [].concat(nodes).reverse();
+            for (var nodeIdx in reversed) {
+                var node = reversed[nodeIdx];
+                node.y = current - (directrix === parentDirectrix ? increment : increment / 2);
+                node.x = directrix;
+                chunkPositions.push({ x: node.x, y: node.y });
+                current -= increment;
+            }
+            return chunkPositions;
+        }
     }
+
 }
 
 var directrixSelectionStrategies = {
-    incrementalVertical: function(increment) {
+    incremental: function(increment) {
         return function(baseline, alreadyTried) {
             var current = baseline;
             while (alreadyTried.includes(current)) {
@@ -44,7 +74,7 @@ var directrixSelectionStrategies = {
             return current;
         }
     },
-    flipFlopVertical: function(increment) {
+    flipFlop: function(increment) {
         return function(baseline, alreadyTried) {
             function getOffset(index) {
                 //0, 1, -1, 2, -2, 3, ...
@@ -57,7 +87,7 @@ var directrixSelectionStrategies = {
 }
 
 var default_configuration = {
-    directrixSelectionStrategy: directrixSelectionStrategies.flipFlopVertical,
+    directrixSelectionStrategy: directrixSelectionStrategies.flipFlop,
     forwardNodeDistributionStrategy: distributionStrategies.horizontalStartingFrom,
     backwardsNodeDistributionStrategy: distributionStrategies.horizontalEndingAt
 }
