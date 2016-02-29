@@ -1,17 +1,14 @@
 var xStep = 10;
 var yStep = 10;
 
-
-
-
 var distributionStrategies = {
     distributeStartingFrom: function(start, increment) {
-        return function(nodes, directrix) {
+        return function(nodes, directrix, parentDirectrix) {
             var chunkPositions = [];
             var current = start;
             for (var nodeIdx in nodes) {
                 var node = nodes[nodeIdx];
-                node.x = current;
+                node.x = current + (directrix === parentDirectrix ? increment : increment / 2);
                 node.y = directrix;
                 chunkPositions.push({ x: node.x, y: node.y });
                 current += increment;
@@ -20,13 +17,13 @@ var distributionStrategies = {
         }
     },
     distributeEndingAt: function(end, increment) {
-        return function(nodes, directrix) {
+        return function(nodes, directrix, parentDirectrix) {
             var current = end;
             var chunkPositions = [];
             var reversed = [].concat(nodes).reverse();
             for (var nodeIdx in reversed) {
                 var node = reversed[nodeIdx];
-                node.x = current;
+                node.x = current - (directrix === parentDirectrix ? increment : increment / 2);
                 node.y = directrix;
                 chunkPositions.push({ x: node.x, y: node.y });
                 current -= increment;
@@ -37,8 +34,8 @@ var distributionStrategies = {
 }
 
 var directrixSelectionStrategies = {
-    alwaysIncrementY: function(baseline, increment) {
-        return function(alreadyTried) {
+    alwaysIncrementY: function(increment) {
+        return function(baseline, alreadyTried) {
             var current = baseline;
             while (alreadyTried.includes(current)) {
                 current += increment;
@@ -46,8 +43,8 @@ var directrixSelectionStrategies = {
             return current;
         }
     },
-    incrementDecrementY: function(baseline, increment) {
-        return function(alreadyTried) {
+    incrementDecrementY: function(increment) {
+        return function(baseline, alreadyTried) {
             function getOffset(index) {
                 //0, 1, -1, 2, -2, 3, ...
                 return Math.pow(-1, index + 1) * Math.ceil(index / 2);
@@ -90,16 +87,16 @@ function doCollide(lhsCoordinatesChunk, rhsCoordinatesChunk) {
     return !disjointedOnX && !disjointedOnY;
 }
 
-function positionNodes(distributionStrategy, directrixSelectionStrategy, nodes, chainToBePositioned, previousChunksPositions) {
+function positionNodes(distributionStrategy, directrixSelectionStrategy, nodes, chainToBePositioned, previousChunksPositions, baselineDirectrix) {
     var nodesToBePositioned = chainToBePositioned.map(function(nodeId) {
         return nodes.find(graphs.byId(nodeId));
     });
     var attemptedDirectrixes = [];
     while (true) {
-        var directrix = directrixSelectionStrategy(attemptedDirectrixes);
+        var directrix = directrixSelectionStrategy(baselineDirectrix, attemptedDirectrixes);
         var currentChunkPositions = {
             directrix: directrix,
-            chunkPositions: distributionStrategy(nodesToBePositioned, directrix)
+            chunkPositions: distributionStrategy(nodesToBePositioned, directrix, baselineDirectrix)
         };
         //search for colliding nodes (among those already placed)
         var thereAreCollisions = previousChunksPositions.some(function(previousChunkPosition) {
@@ -112,18 +109,6 @@ function positionNodes(distributionStrategy, directrixSelectionStrategy, nodes, 
     }
 }
 
-function removeUsedPaths(nodes, pathToRemove) {
-    for (var i = 0; i < pathToRemove.length - 1; ++i) {
-        var fromNodeId = pathToRemove[i];
-        var toNodeId = pathToRemove[i + 1];
-        var toNode = nodes.find(graphs.byId(toNodeId));
-        removeIndex = toNode.parents.indexOf(fromNodeId);
-        if (removeIndex !== -1) {
-            toNode.parents.splice(removeIndex, 1);
-        }
-    }
-}
-
 function removeIfPresent(array, elementToRemove) {
     var removeIndex = array.indexOf(elementToRemove);
     if (removeIndex !== -1) {
@@ -132,29 +117,49 @@ function removeIfPresent(array, elementToRemove) {
 }
 
 function navigateForwardAndDetachChunk(nodes, pathToExplore, startingPoint) {
+    var finalChain = [];
+    var chainStarted = false;
     for (var i = 0; i < pathToExplore.length - 1; ++i) {
-        var fromNodeId = pathToExplore[i];
-        var toNodeId = pathToExplore[i + 1];
-        var toNode = nodes.find(graphs.byId(toNodeId));
-        removeIfPresent(toNode.parents, fromNodeId);
-        if (toNode.x !== undefined && toNode.y !== undefined) {
-            return pathToExplore.slice(1, i+1);
+        var parentNodeId = pathToExplore[i];
+        if (parentNodeId !== startingPoint && !chainStarted) {
+            continue;
+        } else {
+            chainStarted = true;
+        }
+        var childNodeId = pathToExplore[i + 1];
+        var childNode = nodes.find(graphs.byId(childNodeId));
+        removeIfPresent(childNode.parents, parentNodeId);
+        if (childNode.x !== undefined && childNode.y !== undefined) {
+            break;
+        } else {
+            finalChain.push(childNodeId);
         }
     }
-    return pathToExplore.slice(1);
+    return finalChain;
 }
 
-function navigateBAckwardsAndDetachChunk(nodes, pathToExplore, endingPoint) {
-    for (var i = pathToExplore.length; i > 1; --i) {
-        var fromNodeId = pathToExplore[i - 1];
-        var toNodeId = pathToExplore[i];
-        var toNode = nodes.find(graphs.byId(toNodeId));
-        removeIfPresent(toNode.parents, fromNodeId);
-        if (toNode.x !== undefined && toNode.y !== undefined) {
-            return pathToExplore.slice(1, i);
+function navigateBackwardsAndDetachChunk(nodes, pathToExplore, endingPoint) {
+    var finalChain = [];
+    var chainStarted = false;
+    for (var i = pathToExplore.length; i >= 1; --i) {
+        var parentNodeId = pathToExplore[i - 1];
+        var childNodeId = pathToExplore[i];
+
+        if (childNodeId !== endingPoint && !chainStarted) {
+            continue;
+        } else {
+            chainStarted = true;
+        }
+        var childNode = nodes.find(graphs.byId(childNodeId));
+        var parentNode = nodes.find(graphs.byId(parentNodeId));
+        removeIfPresent(childNode.parents, parentNodeId);
+        if (parentNode.x !== undefined && parentNode.y !== undefined) {
+            break;
+        } else {
+            finalChain.push(parentNodeId);
         }
     }
-    return pathToExplore.slice(1);
+    return finalChain.reverse();
 }
 
 function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, previousChunksPosition) {
@@ -162,49 +167,43 @@ function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, p
     var newChunksPositions = [];
     do {
         var longestAncestorsChain = BellmanFord.costliestToNode(allNodes, ofNodeId);
-        removeUsedPaths(allNodes, longestAncestorsChain);
-        longestAncestorsChain = longestAncestorsChain.filter(function(ancestorId) {
-            var ancestorNode = allNodes.find(graphs.byId(ancestorId));
-            return ancestorNode.x === undefined && ancestorNode.y === undefined;
-        });
+        var longestValidAncestorsChain = navigateBackwardsAndDetachChunk(allNodes, longestAncestorsChain, ofNodeId);
         var anchestorsChunk = positionNodes(
-            distributionStrategies.distributeEndingAt(node.x - xStep / 2, xStep),
-            directrixSelectionStrategies.incrementDecrementY(currentDirectrix, yStep),
+            distributionStrategies.distributeEndingAt(node.x, xStep),
+            directrixSelectionStrategies.incrementDecrementY(yStep),
             allNodes,
-            longestAncestorsChain,
-            previousChunksPosition
+            longestValidAncestorsChain,
+            previousChunksPosition,
+            currentDirectrix
         );
         if (anchestorsChunk.chunkPositions.length > 0) {
             newChunksPositions.push(anchestorsChunk);
         }
         var longestDescendantsChain = BellmanFord.costliestFromNode(allNodes, ofNodeId);
-        removeUsedPaths(allNodes, longestDescendantsChain);
-        longestDescendantsChain = longestDescendantsChain.filter(function(descendantId) {
-            var descendantNode = allNodes.find(graphs.byId(descendantId));
-            return descendantNode.x === undefined && descendantNode.y === undefined;
-        });
+        var longestValidDescendantsChain = navigateForwardAndDetachChunk(allNodes, longestDescendantsChain, ofNodeId);
         var descendantsChunk = positionNodes(
-            distributionStrategies.distributeStartingFrom(node.x + xStep / 2, xStep),
-            directrixSelectionStrategies.incrementDecrementY(currentDirectrix, yStep),
+            distributionStrategies.distributeStartingFrom(node.x, xStep),
+            directrixSelectionStrategies.incrementDecrementY(yStep),
             allNodes,
-            longestDescendantsChain,
-            previousChunksPosition.concat(newChunksPositions)
+            longestValidDescendantsChain,
+            previousChunksPosition.concat(newChunksPositions),
+            currentDirectrix
         );
         if (descendantsChunk.chunkPositions.length > 0) {
             newChunksPositions.push(descendantsChunk);
         }
 
-        longestAncestorsChain.reverse().forEach(function(ancestor) {
+        longestValidAncestorsChain.reverse().forEach(function(ancestor) {
             newChunksPositions = newChunksPositions.concat(
                 positionAncestorsAndDescendants(allNodes, ancestor, anchestorsChunk.directrix, previousChunksPosition.concat(newChunksPositions))
             );
         })
-        longestDescendantsChain.forEach(function(descendant) {
+        longestValidDescendantsChain.forEach(function(descendant) {
             newChunksPositions = newChunksPositions.concat(
                 positionAncestorsAndDescendants(allNodes, descendant, descendantsChunk.directrix, previousChunksPosition.concat(newChunksPositions))
             );
         })
-    } while (longestAncestorsChain.length !== 0 || longestDescendantsChain.length !== 0)
+    } while (longestValidAncestorsChain.length !== 0 || longestValidDescendantsChain.length !== 0)
     return newChunksPositions;
 }
 
@@ -219,15 +218,16 @@ function calculateCoordinates(graph, startingPoint, mainDirectrix) {
         }
     });
     var costliestPossiblePath = BellmanFord.costliestPossible(nodes);
-    removeUsedPaths(nodes, costliestPossiblePath);
+    navigateForwardAndDetachChunk(nodes, costliestPossiblePath, costliestPossiblePath[0]);
 
     var allChunksPositions = [];
     var mainChunkPositions = positionNodes(
         distributionStrategies.distributeStartingFrom(startingPoint || 0, xStep),
-        directrixSelectionStrategies.incrementDecrementY(mainDirectrix || 0, yStep),
+        directrixSelectionStrategies.incrementDecrementY(yStep),
         nodes,
         costliestPossiblePath,
-        allChunksPositions
+        allChunksPositions,
+        mainDirectrix || 0
     );
 
     allChunksPositions.push(mainChunkPositions);
