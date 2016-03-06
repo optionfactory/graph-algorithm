@@ -70,266 +70,184 @@ function adaptGraphToD3Format(rawGraph, canvas, padding, origin, mainDirectrix, 
 
 }
 
-function drawHorizontals(graphs, divId, config) {
-    Object.keys(graphs).forEach(function(graphName) {
-        var demoGraph = graphs[graphName];
+function drawDemoGraph(divId, graphName, demoGraph, config) {
 
-        var canvas = {
-            width: 400,
-            height: 200
-        }
-        var graphPadding = {
-            horizontal: canvas.width * .08,
-            vertical: canvas.height * .25
-        }
+    var canvas = {
+        width: 400,
+        height: 200
+    }
+    var graphPadding = {
+        horizontal: canvas.width * .08,
+        vertical: canvas.height * .25
+    }
 
-        var graph = adaptGraphToD3Format(demoGraph, canvas, graphPadding, undefined, undefined, config);
-        var color = d3.scale.category20();
+    var graph = adaptGraphToD3Format(demoGraph, canvas, graphPadding, undefined, undefined, config);
+    var color = d3.scale.category20();
 
-        var force = d3.layout.force()
-            .charge(0)
-            .linkDistance(0)
-            .size([canvas.width, canvas.height])
-            .nodes(graph.nodes)
-            .links(graph.links)
-            //     .start(); //no need to start the simulation, as all points are fixed
+    var force = d3.layout.force()
+        .charge(0)
+        .linkDistance(0)
+        .size([canvas.width, canvas.height])
+        .nodes(graph.nodes)
+        .links(graph.links)
+        //.start(); //no need to start the simulation, as all points are fixed
 
-        var svg = d3.select("#"+divId).append("svg")
-            .attr("width", canvas.width)
-            .attr("height", canvas.height);
+    //create a wrapper div to hold svg and buttons together
+    var containerDiv = d3
+        .select("#" + divId)
+        .append("div")
+        .attr("class", "svgContainer");
 
+    var zoomBehavior = d3.behavior.zoom()
+        .on("zoom", function() {
 
-        //canvas background
-        svg.append("rect")
-            .attr("x", 5)
-            .attr("y", 5)
-            .attr("width", canvas.width - 5)
-            .attr("height", canvas.height - 5)
-            .attr("fill", "#EEE");
+            var t = d3.transform(zoomableCanvas.attr("transform"));
+            t.translate = d3.event.translate;
+            t.scale = d3.event.scale;
+            // We only want to transition on wheel event, without interfering with mouse drag panning
+            var isWheel = d3.event.sourceEvent.type === "wheel";
+            var toTransform = isWheel ? zoomableCanvas.transition() : zoomableCanvas;
 
-        var nodeRadius = 8;
+            toTransform.attr("transform", t.toString());
+        });
 
-        //graph title
-        svg.append("g")
-            .selectAll(".title")
-            .data([graphName])
-            .enter()
-            .append("text")
-            .attr("class", "nodeLabel")
-            .attr("x", canvas.width / 2)
-            .attr("y", "0")
-            .attr("dy", "1.25em")
-            .attr("text-anchor", "middle")
-            .text(identity);
+    //reset button
+    containerDiv.append("button")
+        .attr("class", "reset")
+        .on("click", function() {
+            zoomBehavior.scale(1);
+            zoomBehavior.translate([0, 0]);
+            zoomableCanvas.transition().attr('transform', 'translate(' + zoomBehavior.translate() + ') scale(' + zoomBehavior.scale() + ')')
+        });
 
-        //draw actual svg elements
-        var nodes = svg.selectAll(".node")
-            .data(graph.nodes)
-            .enter().append("circle")
-            .attr("class", "node")
-            .attr("r", nodeRadius)
-            .attr("cx", pluck("x"))
-            .attr("cy", pluck("y"))
-            .style("fill", function(d) {
-                return color(d.group);
-            })
-            .call(force.drag);
+    //main svg
+    var svg = containerDiv
+        .append("svg")
+        .attr("width", canvas.width)
+        .attr("height", canvas.height)
+        .append("g")
+        .call(zoomBehavior)
+        .on("dblclick.zoom", null);
 
-        var nodeLabels = svg.append("g")
-            .selectAll(".nodeLabel")
-            .data(graph.nodes)
-            .enter()
-            .append("text")
-            .attr("class", "nodeLabel")
-            .attr("x", pluck("x"))
-            .attr("y", function(d) {
-                return d.y + nodeRadius;
-            })
-            .attr("dy", ".75em")
-            .attr("text-anchor", "middle")
-            .text(pluck("id"));
+    //just some grey background
+    var rect = svg.append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", canvas.width)
+        .attr("height", canvas.height)
+        .attr("fill", "#EEE")
+        .style("pointer-events", "all");
 
-        var links = svg.selectAll(".link")
-            .data(graph.links)
-            .enter().append("path")
-            .attr("class", "link")
-            .attr("marker-end", "url(#arrow)")
-            .attr("d", function(d) {
-                var path = "";
-                // move to starting node's center
-                path += "M " + (d.source.x - nodeRadius) + " " + d.source.y + " ";
-                // cubic Bezier curve control points. magic number here
-                path += "C " + (d.source.x - 30) + " " + d.source.y + " ";
-                path += ", " + (d.target.x + 30) + " " + d.target.y + " ";
-                // final destination (just right of the destination node)
-                path += ", " + (d.target.x + nodeRadius) + " " + d.target.y + " ";
-                return path;
-            });
+    //graph title (needs to be positioned after the grey box to be over it)
+    svg.append("g")
+        .selectAll(".title")
+        .data([graphName])
+        .enter()
+        .append("text")
+        .attr("class", "nodeLabel")
+        .attr("x", canvas.width / 2)
+        .attr("y", "0")
+        .attr("dy", "1.25em")
+        .attr("text-anchor", "middle")
+        .text(identity);
 
-        //line ending (arrow symbol)
-        svg.append("defs").selectAll("marker")
-            .data(["arrow"])
-            .enter().append("marker")
-            .attr("id", identity)
-            .attr("viewBox", "0 0 10 10")
-            .attr("refX", nodeRadius)
-            .attr("refY", 5)
-            .attr("markerUnits", "strokeWidth")
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
-            .attr("orient", "auto")
-            .append("path")
-            .attr("d", "M 0 0 L 10 5 L 0 10 z");
+    //the main svg:g element, used to zoom/pan
+    var zoomableCanvas = svg.append("g")
+        .attr("x", 5)
+        .attr("y", 5)
+        .attr("width", canvas.width - 5)
+        .attr("height", canvas.height - 5);
 
-        //no need to start the simulation, as all points are fixed
-        /*    force.on("tick", function() {
+    var nodeRadius = 8;
 
-            });
-        */
-    });
+    //draw actual svg elements
+    var nodes = zoomableCanvas.selectAll(".node")
+        .data(graph.nodes)
+        .enter().append("circle")
+        .attr("class", "node")
+        .attr("r", nodeRadius)
+        .attr("cx", pluck("x"))
+        .attr("cy", pluck("y"))
+        .style("fill", function(d) {
+            return color(d.group);
+        })
+        .on("dblclick.zoom", function(d) {
+           d3.event.stopPropagation(); // possibly redundant, as we removed it from the main svg
+            var dcx = (canvas.width / 2 - d.x * zoomBehavior.scale());
+            var dcy = (canvas.height / 2 - d.y * zoomBehavior.scale());
+            zoomableCanvas.transition().attr("transform", "translate(" + [dcx, dcy] + ")scale(" + zoomBehavior.scale() + ")");
+        });
 
-}
-function drawVerticals(graphs, divId, config) {
-    Object.keys(graphs).forEach(function(graphName) {
-        var demoGraph = graphs[graphName];
+    var nodeLabels = zoomableCanvas.append("g")
+        .selectAll(".nodeLabel")
+        .data(graph.nodes)
+        .enter()
+        .append("text")
+        .attr("class", "nodeLabel")
+        .attr("x", pluck("x"))
+        .attr("y", function(d) {
+            return d.y + nodeRadius;
+        })
+        .attr("dy", ".75em")
+        .attr("text-anchor", "middle")
+        .text(pluck("id"));
 
-        var canvas = {
-            width: 200,
-            height: 400
-        }
-        var graphPadding = {
-            horizontal: canvas.width * .25,
-            vertical: canvas.height * .08
-        }
+    var links = zoomableCanvas.selectAll(".link")
+        .data(graph.links)
+        .enter().append("path")
+        .attr("class", "link")
+        .attr("marker-end", "url(#arrow)")
+        .attr("d", function(d) {
+            var path = "";
+            // move to starting node's center
+            path += "M " + (d.source.x - nodeRadius) + " " + d.source.y + " ";
+            // cubic Bezier curve control points. magic number here
+            path += "C " + (d.source.x - 30) + " " + d.source.y + " ";
+            path += ", " + (d.target.x + 30) + " " + d.target.y + " ";
+            // final destination (just right of the destination node)
+            path += ", " + (d.target.x + nodeRadius) + " " + d.target.y + " ";
+            return path;
+        });
 
-        var graph = adaptGraphToD3Format(demoGraph, canvas, graphPadding, undefined, undefined, config);
-        var color = d3.scale.category20();
+    //line ending (arrow symbol)
+    zoomableCanvas.append("defs").selectAll("marker")
+        .data(["arrow"])
+        .enter().append("marker")
+        .attr("id", identity)
+        .attr("viewBox", "0 0 10 10")
+        .attr("refX", nodeRadius)
+        .attr("refY", 5)
+        .attr("markerUnits", "strokeWidth")
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M 0 0 L 10 5 L 0 10 z");
 
-        var force = d3.layout.force()
-            .charge(0)
-            .linkDistance(0)
-            .size([canvas.width, canvas.height])
-            .nodes(graph.nodes)
-            .links(graph.links)
-            //     .start(); //no need to start the simulation, as all points are fixed
+    //no need to start the simulation, as all points are fixed
+    /*    force.on("tick", function() {
 
-        var svg = d3.select("#"+divId).append("svg")
-            .attr("width", canvas.width)
-            .attr("height", canvas.height);
+        });
+    */
 
-
-        //canvas background
-        svg.append("rect")
-            .attr("x", 5)
-            .attr("y", 5)
-            .attr("width", canvas.width - 5)
-            .attr("height", canvas.height - 5)
-            .attr("fill", "#EEE");
-
-        var nodeRadius = 8;
-
-        //graph title
-        svg.append("g")
-            .selectAll(".title")
-            .data([graphName])
-            .enter()
-            .append("text")
-            .attr("class", "nodeLabel")
-            .attr("x", canvas.width / 2)
-            .attr("y", "0")
-            .attr("dy", "1.25em")
-            .attr("text-anchor", "middle")
-            .text(identity);
-
-        //draw actual svg elements
-        var nodes = svg.selectAll(".node")
-            .data(graph.nodes)
-            .enter().append("circle")
-            .attr("class", "node")
-            .attr("r", nodeRadius)
-            .attr("cx", pluck("x"))
-            .attr("cy", pluck("y"))
-            .style("fill", function(d) {
-                return color(d.group);
-            })
-            .call(force.drag);
-
-        var nodeLabels = svg.append("g")
-            .selectAll(".nodeLabel")
-            .data(graph.nodes)
-            .enter()
-            .append("text")
-            .attr("class", "nodeLabel")
-            .attr("x", pluck("x"))
-            .attr("y", function(d) {
-                return d.y + nodeRadius;
-            })
-            .attr("dy", ".75em")
-            .attr("text-anchor", "middle")
-            .text(pluck("id"));
-
-        var links = svg.selectAll(".link")
-            .data(graph.links)
-            .enter().append("path")
-            .attr("class", "link")
-            .attr("marker-end", "url(#arrow)")
-            .attr("d", function(d) {
-                var path = "";
-                // move to starting node's center
-                path += "M " + (d.source.x) + " " + (d.source.y - nodeRadius) + " ";
-                // cubic Bezier curve control points. magic number here
-                path += "C " + (d.source.x) + " " + (d.source.y-30)+ " ";
-                path += ", " + (d.target.x) + " " + (d.target.y+30) + " ";
-                // final destination (just right of the destination node)
-                path += ", " + (d.target.x) + " " + (d.target.y + nodeRadius) + " ";
-                return path;
-            });
-
-        //line ending (arrow symbol)
-        svg.append("defs").selectAll("marker")
-            .data(["arrow"])
-            .enter().append("marker")
-            .attr("id", identity)
-            .attr("viewBox", "0 0 10 10")
-            .attr("refX", nodeRadius)
-            .attr("refY", 5)
-            .attr("markerUnits", "strokeWidth")
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
-            .attr("orient", "auto")
-            .append("path")
-            .attr("d", "M 0 0 L 10 5 L 0 10 z");
-
-        //no need to start the simulation, as all points are fixed
-        /*    force.on("tick", function() {
-
-            });
-        */
-    });
 
 }
 
-drawHorizontals(demoGraphs, "horizontalIncrement", {
+function drawDemoGraphs(graphs, divId, config) {
+    Object.keys(graphs).forEach(function(graphName) {
+        var demoGraph = graphs[graphName];
+        drawDemoGraph(divId, graphName, demoGraph, config);
+    });
+}
+
+drawDemoGraphs(demoGraphs, "horizontalIncrement", {
     directrixSelectionStrategy: directrixSelectionStrategies.incremental,
     forwardNodeDistributionStrategy: distributionStrategies.horizontalStartingFrom,
     backwardsNodeDistributionStrategy: distributionStrategies.horizontalEndingAt
 });
 
-drawHorizontals(demoGraphs, "horizontalFlipFlop", {
+drawDemoGraphs(demoGraphs, "horizontalFlipFlop", {
     directrixSelectionStrategy: directrixSelectionStrategies.flipFlop,
     forwardNodeDistributionStrategy: distributionStrategies.horizontalStartingFrom,
     backwardsNodeDistributionStrategy: distributionStrategies.horizontalEndingAt
 });
-/*
-drawVerticals(demoGraphs, "verticalIncremental", {
-    directrixSelectionStrategy: directrixSelectionStrategies.incremental,
-    forwardNodeDistributionStrategy: distributionStrategies.verticalStartingFrom,
-    backwardsNodeDistributionStrategy: distributionStrategies.verticalEndingAt
-});
-
-drawVerticals(demoGraphs, "verticalFlipFlop", {
-    directrixSelectionStrategy: directrixSelectionStrategies.flipFlop,
-    forwardNodeDistributionStrategy: distributionStrategies.verticalStartingFrom,
-    backwardsNodeDistributionStrategy: distributionStrategies.verticalEndingAt
-});
-*/
