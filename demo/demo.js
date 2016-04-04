@@ -35,7 +35,7 @@ function adaptGraphToD3Format(rawGraph, canvas, padding, origin, mainDirectrix, 
             .range([svgHeight - verticalPadding, verticalPadding]);
     }
 
-    var coordinatesForNodes = calculateCoordinates(rawGraph, origin, mainDirectrix, config);
+    var coordinatesForNodes = calculateCoordinates(rawGraph.nodes, origin, mainDirectrix, config);
     var coordsById = d3.map();
 
 
@@ -241,12 +241,16 @@ function drawDemoGraphs(graphs, divId, config) {
 }
 
 drawDemoGraphs(demoGraphs, "horizontalIncrement", {
+    alongDirectrixStep:10,
+    betweenDirectrixesStep:10,
     directrixSelectionStrategy: directrixSelectionStrategies.incremental,
     forwardNodeDistributionStrategy: distributionStrategies.horizontalStartingFrom,
     backwardsNodeDistributionStrategy: distributionStrategies.horizontalEndingAt
 });
 
 drawDemoGraphs(demoGraphs, "horizontalFlipFlop", {
+    alongDirectrixStep:10,
+    betweenDirectrixesStep:10,
     directrixSelectionStrategy: directrixSelectionStrategies.flipFlop,
     forwardNodeDistributionStrategy: distributionStrategies.horizontalStartingFrom,
     backwardsNodeDistributionStrategy: distributionStrategies.horizontalEndingAt

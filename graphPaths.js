@@ -91,27 +91,46 @@ var graphs = {
     }
 }
 
+var op1;
+var op2;
+var op3;
+var op4;
+
 var BellmanFord = {
     _visit: function(nodes, visited, fromNode) {
+        var start = new Date();
         var reachablefromNode = nodes.filter(graphs.reachablefromNode(fromNode.id));
+        op1+=new Date()-start;
+        var start = new Date();
         graphs.updateCostIfLower(reachablefromNode, fromNode);
-        visited.push(fromNode);
+        op2+=new Date()-start;
+        var start = new Date();
+        visited.push(fromNode.id);
+        op3+=new Date()-start;
+        var start = new Date();
         var reachableNotVisited = nodes.filter(function(node) {
-            return node.cost !== Infinity && !visited.some(graphs.byId(node.id));
+            return visited.indexOf(node.id)===-1;
+        }).filter(function(node) {
+            return node.cost !== Infinity;
         });
+        op4+=new Date()-start;
         if (reachableNotVisited.length === 0) {
-            return nodes;
+            return;
         }
         var nextNode = reachableNotVisited[0];
-        return BellmanFord._visit(nodes, visited, nextNode);
+        BellmanFord._visit(nodes, visited, nextNode);
     },
     _calculateCostsStartingFromNode: function(graph, edgeWeightCalculator, startingNode) {
         var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
         if (nodes.length <= 1) {
             return nodes;
         }
+        op1=0;
+        op2=0;
+        op3=0;
+        op4=0;
         for (var i = 0; i < nodes.length - 1; ++i) {
-            nodes = BellmanFord._visit(nodes, [], nodes.find(graphs.byId(startingNode.id)));
+            BellmanFord._visit(nodes, [], nodes.find(graphs.byId(startingNode.id)));
         }
         return nodes;
     },
