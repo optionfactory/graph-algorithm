@@ -16,7 +16,7 @@ var graphs = {
     },
     createNodesStructure: function(graph, edgeWeightCalculator) {
         edgeWeightCalculator = edgeWeightCalculator || graphs.constantEdgeWeightCalculator(1);
-        return graph.map(function(node) {
+        var nodes =  graph.map(function(node) {
             return {
                 id: node.id,
                 parents: node.parents.map(function(parentId) {
@@ -26,6 +26,10 @@ var graphs = {
                 previous: undefined
             }
         });
+        nodes.forEach(function(node){
+            node.reachable = nodes.filter(graphs.reachablefromNode(node.id));
+        });
+        return nodes;
     },
     constantEdgeWeightCalculator: function(cost) {
         return function(from, to) {
@@ -40,7 +44,7 @@ var graphs = {
     },
     updateCostIfLower: function(reachablefromNode, fromNode) {
         if (fromNode.cost === Infinity) {
-            fromNode.cost = 0;
+            return;
         }
         reachablefromNode.forEach(function(node) {
             var costIncrement = node.parents.find(graphs.byId(fromNode.id)).weight;
@@ -91,46 +95,28 @@ var graphs = {
     }
 }
 
-var op1;
-var op2;
-var op3;
-var op4;
-
 var BellmanFord = {
-    _visit: function(nodes, visited, fromNode) {
-        var start = new Date();
-        var reachablefromNode = nodes.filter(graphs.reachablefromNode(fromNode.id));
-        op1+=new Date()-start;
-        var start = new Date();
-        graphs.updateCostIfLower(reachablefromNode, fromNode);
-        op2+=new Date()-start;
-        var start = new Date();
-        visited.push(fromNode.id);
-        op3+=new Date()-start;
-        var start = new Date();
-        var reachableNotVisited = nodes.filter(function(node) {
-            return visited.indexOf(node.id)===-1;
-        }).filter(function(node) {
-            return node.cost !== Infinity;
-        });
-        op4+=new Date()-start;
-        if (reachableNotVisited.length === 0) {
-            return;
-        }
-        var nextNode = reachableNotVisited[0];
-        BellmanFord._visit(nodes, visited, nextNode);
-    },
     _calculateCostsStartingFromNode: function(graph, edgeWeightCalculator, startingNode) {
+        var start = new Date();
         var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
         if (nodes.length <= 1) {
             return nodes;
         }
-        op1=0;
-        op2=0;
-        op3=0;
-        op4=0;
+        nodes.sort(function(lhs, rhs) {
+            if (lhs.id === startingNode.id) {
+                return -1;
+            }
+            if (rhs.id === startingNode.id) {
+                return 1;
+            }
+            return 0;
+        });
+        nodes[0].cost=0;
         for (var i = 0; i < nodes.length - 1; ++i) {
-            BellmanFord._visit(nodes, [], nodes.find(graphs.byId(startingNode.id)));
+            for (var j = 0; j < nodes.length; ++j) {
+                var fromNode = nodes[j];
+                graphs.updateCostIfLower(fromNode.reachable, fromNode);
+            }
         }
         return nodes;
     },
@@ -194,8 +180,7 @@ var BellmanFord = {
 
 var Dijkstra = {
     _visit: function(nodes, visited, fromNode) {
-        var reachablefromNode = nodes.filter(graphs.reachablefromNode(fromNode.id));
-        graphs.updateCostIfLower(reachablefromNode, fromNode);
+        graphs.updateCostIfLower(fromNode.reachable, fromNode);
         visited.push(fromNode);
         var notVisited = nodes.filter(function(node) {
             return !visited.some(graphs.byId(node.id));
@@ -208,13 +193,23 @@ var Dijkstra = {
     },
     _calculateCostsStartingFromNode: function(graph, edgeWeightCalculator, startingNode) {
         var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
+                nodes.sort(function(lhs, rhs) {
+            if (lhs.id === startingNode.id) {
+                return -1;
+            }
+            if (rhs.id === startingNode.id) {
+                return 1;
+            }
+            return 0;
+        });
+        nodes[0].cost=0;
         return Dijkstra._visit(nodes, [], nodes.find(graphs.byId(startingNode.id)));
     },
     cheapestToNode: function(graph, toNodeId, edgeWeightCalculator) {
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
-        var weightedNodesByStartingPoint = rootNodes.map(Dijkstra._calculateCostsStartingFromNode.curry(graph,edgeWeightCalculator));
+        var weightedNodesByStartingPoint = rootNodes.map(Dijkstra._calculateCostsStartingFromNode.curry(graph, edgeWeightCalculator));
         if (weightedNodesByStartingPoint.length === 0) {
             return [];
         }

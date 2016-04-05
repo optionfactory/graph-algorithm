@@ -68,7 +68,7 @@ QUnit.test("path to root is itself", function(assert) {
 Object.keys(demoGraphs).forEach(function(graphName) {
     QUnit.test(graphName, function(assert) {
         var graph = demoGraphs[graphName];
-        var got = BellmanFord.cheapestToNode(graph.nodes, "tip");
+        var got = BellmanFord.cheapestToNode(graph.nodes, "tip", function(){return 1;});
         assert.ok(graph.cheapestToTip.some(function(expected) {
             return deepEqual(expected, got);
         }), errorMessage(graph.cheapestToTip, got));

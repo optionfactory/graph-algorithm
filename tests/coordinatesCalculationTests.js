@@ -10,7 +10,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
     });
     QUnit.test(graphName + ": no two nodes on the same coordinates", function(assert) {
         var graph = demoGraphs[graphName];
-        var coords = calculateCoordinates(graph);
+        var coords = calculateCoordinates(graph.nodes);
         var nodesAndClashes = coords.map(function(node) {
             return {
                 node: node,
