@@ -120,12 +120,23 @@ var BellmanFord = {
         }
         return nodes;
     },
-    _buildSubgraph: function(graph, nodeId,target){
+    _buildSubgraphToNode: function(graph, nodeId, target) {
         target = target || [];
         var node = graph.find(graphs.byId(nodeId));
         target.push(node);
-        for(var i =0;i!=node.parents.length;++i) {
-            BellmanFord._buildSubgraph(graph,node.parents[i],target);
+        for (var i = 0; i != node.parents.length; ++i) {
+            BellmanFord._buildSubgraphToNode(graph, node.parents[i], target);
+        }
+        return target;
+    },
+    _buildSubgraphFromNode: function(graph, node, target) {
+        target = target || [];
+        target.push(node);
+        var children = graph.filter(function(nod) {
+            return nod.parents.indexOf(node.id) !== -1;
+        });
+        for (var i = 0; i != children.length; ++i) {
+            BellmanFord._buildSubgraphFromNode(graph, children[i], target);
         }
         return target;
     },
@@ -135,12 +146,12 @@ var BellmanFord = {
             return [];
         }
 
-        var r = [];
-        BellmanFord._buildSubgraph(graph,toNodeId,r);
-        var rootNodes = r.filter(function(node) {
+        var subgraph = [];
+        BellmanFord._buildSubgraphToNode(graph, toNodeId, subgraph);
+        var rootNodes = subgraph.filter(function(node) {
             return node.parents.length == 0;
         });
-        var weightedNodesByStartingPoint = rootNodes.map(BellmanFord._calculateCostsStartingFromNode.curry(r, edgeWeightCalculator));
+        var weightedNodesByStartingPoint = rootNodes.map(BellmanFord._calculateCostsStartingFromNode.curry(subgraph, edgeWeightCalculator));
         var routeWithShortestPathToNode = weightedNodesByStartingPoint.length === 0 ? [] : weightedNodesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
         return graphs.navigate(routeWithShortestPathToNode, toNodeId, []).reverse();
     },
@@ -155,8 +166,11 @@ var BellmanFord = {
         if (startingNodeInGraph === undefined) {
             return [];
         }
+        var subgraph = [];
+        BellmanFord._buildSubgraphFromNode(graph, startingNodeInGraph, subgraph);
+
         // Inverting the edge weights makes the cheapest path search into the costlier
-        var weightedNodes = BellmanFord._calculateCostsStartingFromNode(graph, graphs.invertEdgeWeightCalculation(edgeWeightCalculator), startingNodeInGraph);
+        var weightedNodes = BellmanFord._calculateCostsStartingFromNode(subgraph, graphs.invertEdgeWeightCalculation(edgeWeightCalculator), startingNodeInGraph);
         if (weightedNodes.length === 0) {
             return [];
         }
@@ -167,7 +181,8 @@ var BellmanFord = {
     },
     costliestPossible: function(graph, edgeWeightCalculator) {
         edgeWeightCalculator = edgeWeightCalculator || function() {
-                return 1; }
+                return 1;
+            }
             //the costliest path necessarily starts from a root node
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
