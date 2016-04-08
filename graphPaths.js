@@ -16,7 +16,7 @@ var graphs = {
     },
     createNodesStructure: function(graph, edgeWeightCalculator) {
         edgeWeightCalculator = edgeWeightCalculator || graphs.constantEdgeWeightCalculator(1);
-        var nodes =  graph.map(function(node) {
+        var nodes = graph.map(function(node) {
             return {
                 id: node.id,
                 parents: node.parents.map(function(parentId) {
@@ -26,7 +26,7 @@ var graphs = {
                 previous: undefined
             }
         });
-        nodes.forEach(function(node){
+        nodes.forEach(function(node) {
             node.reachable = nodes.filter(graphs.reachablefromNode(node.id));
         });
         return nodes;
@@ -111,7 +111,7 @@ var BellmanFord = {
             }
             return 0;
         });
-        nodes[0].cost=0;
+        nodes[0].cost = 0;
         for (var i = 0; i < nodes.length - 1; ++i) {
             for (var j = 0; j < nodes.length; ++j) {
                 var fromNode = nodes[j];
@@ -120,22 +120,37 @@ var BellmanFord = {
         }
         return nodes;
     },
+    _buildSubgraph: function(graph, nodeId,target){
+        target = target || [];
+        var node = graph.find(graphs.byId(nodeId));
+        target.push(node);
+        for(var i =0;i!=node.parents.length;++i) {
+            BellmanFord._buildSubgraph(graph,node.parents[i],target);
+        }
+        return target;
+    },
     cheapestToNode: function(graph, toNodeId, edgeWeightCalculator) {
+        edgeWeightCalculator = edgeWeightCalculator || graphs.constantEdgeWeightCalculator(1);
         if (!graph.map(graphs.toId).includes(toNodeId)) {
             return [];
         }
-        var rootNodes = graph.filter(function(node) {
+
+        var r = [];
+        BellmanFord._buildSubgraph(graph,toNodeId,r);
+        var rootNodes = r.filter(function(node) {
             return node.parents.length == 0;
         });
-        var weightedNodesByStartingPoint = rootNodes.map(BellmanFord._calculateCostsStartingFromNode.curry(graph, edgeWeightCalculator));
+        var weightedNodesByStartingPoint = rootNodes.map(BellmanFord._calculateCostsStartingFromNode.curry(r, edgeWeightCalculator));
         var routeWithShortestPathToNode = weightedNodesByStartingPoint.length === 0 ? [] : weightedNodesByStartingPoint.sort(graphs.sortByCostToNode.curry(toNodeId))[0];
         return graphs.navigate(routeWithShortestPathToNode, toNodeId, []).reverse();
     },
     costliestToNode: function(graph, toNodeId, edgeWeightCalculator) {
+        edgeWeightCalculator = edgeWeightCalculator || graphs.constantEdgeWeightCalculator(1);
         // Inverting the edge weights makes the cheapest path search into the costlier
         return BellmanFord.cheapestToNode(graph, toNodeId, graphs.invertEdgeWeightCalculation(edgeWeightCalculator));
     },
     costliestFromNode: function(graph, fromNodeId, edgeWeightCalculator) {
+        edgeWeightCalculator = edgeWeightCalculator || graphs.constantEdgeWeightCalculator(1);
         var startingNodeInGraph = graph.find(graphs.byId(fromNodeId));
         if (startingNodeInGraph === undefined) {
             return [];
@@ -151,7 +166,9 @@ var BellmanFord = {
         return graphs.navigate(weightedNodes, mostCostlyNodeToReach.id, []).reverse();
     },
     costliestPossible: function(graph, edgeWeightCalculator) {
-        //the costliest path necessarily starts from a root node
+        edgeWeightCalculator = edgeWeightCalculator || function() {
+                return 1; }
+            //the costliest path necessarily starts from a root node
         var rootNodes = graph.filter(function(node) {
             return node.parents.length == 0;
         });
@@ -193,7 +210,7 @@ var Dijkstra = {
     },
     _calculateCostsStartingFromNode: function(graph, edgeWeightCalculator, startingNode) {
         var nodes = graphs.createNodesStructure(graph, edgeWeightCalculator);
-                nodes.sort(function(lhs, rhs) {
+        nodes.sort(function(lhs, rhs) {
             if (lhs.id === startingNode.id) {
                 return -1;
             }
@@ -202,7 +219,7 @@ var Dijkstra = {
             }
             return 0;
         });
-        nodes[0].cost=0;
+        nodes[0].cost = 0;
         return Dijkstra._visit(nodes, [], nodes.find(graphs.byId(startingNode.id)));
     },
     cheapestToNode: function(graph, toNodeId, edgeWeightCalculator) {
