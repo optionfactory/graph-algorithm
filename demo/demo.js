@@ -35,7 +35,7 @@ function adaptGraphToD3Format(rawGraph, canvas, padding, origin, mainDirectrix, 
             .range([svgHeight - verticalPadding, verticalPadding]);
     }
 
-    var coordinatesForNodes = calculateCoordinates(rawGraph.nodes, origin, mainDirectrix, config);
+    var coordinatesForNodes = new CoordinatesCalculator(config).positionNodes(rawGraph.nodes);
     var coordsById = d3.map();
 
 
