@@ -4,13 +4,58 @@ function CoordinatesCalculator(config) {
         alongDirectrixStep: (config && config.alongDirectrixStep) || 10,
         betweenDirectrixesStep: (config && config.betweenDirectrixesStep) || 10,
         mainDirectrix: (config && config.mainDirectrix) || 0,
-        forwardNodeDistributionStrategy: (config && config.forwardNodeDistributionStrategy) || distributionStrategies.horizontalStartingFrom,
-        backwardsNodeDistributionStrategy: (config && config.backwardsNodeDistributionStrategy) || distributionStrategies.horizontalEndingAt,
+        forwardNodeDistributionStrategy: (config && config.forwardNodeDistributionStrategy) || distributionStrategies.horizontalConstrained,
+        backwardsNodeDistributionStrategy: (config && config.backwardsNodeDistributionStrategy) || distributionStrategies.horizontalConstrainedInverse,
         directrixSelectionStrategy: (config && config.directrixSelectionStrategy) || directrixSelectionStrategies.flipFlop,
     }
 }
 
 var distributionStrategies = {
+    horizontalConstrained: function(startNode, defaultIncrement) {
+        return function(nodes, directrix, parentDirectrix, allNodes) {
+            var chunkPositions = [];
+            var current = startNode.x + (directrix === parentDirectrix ? 0 : -defaultIncrement / 2);
+
+            for (var i = 0; i != nodes.length; ++i) {
+                var node = nodes[i];
+                // search all parents already positioned, get their x
+                var parentXs = node.originalNode.parents
+                    .map(function(nodeId) {
+                        return allNodes.find(graphs.byId(nodeId)).x;
+                    }).filter(function(coord) {
+                        return coord !== undefined;
+                    }).map(function(coord) {
+                        return coord + defaultIncrement / 2
+                    });
+                var minimumX = Math.max(...parentXs);
+
+                // then search all children, get their x
+                var childrenXs = allNodes.filter(function(nd) {
+                    return nd.x !== undefined;
+                }).filter(function(nd) {
+                    return nd.originalNode.parents.indexOf(node.id) !== -1;
+                }).map(function(nd) {
+                    return nd.x - defaultIncrement / 2;
+                })
+                var maximumX = Math.min(...childrenXs);
+
+                //   max(current, parents)+minDelta <= node position <= min(current, children)-minDelta
+                var effectiveX = current + defaultIncrement;
+                if (effectiveX > maximumX) {
+                    effectiveX = maximumX;
+                }
+                if (effectiveX < minimumX) {
+                    effectiveX = minimumX;
+                }
+
+                node.x = effectiveX;
+                node.y = directrix;
+                chunkPositions.push({ x: node.x, y: node.y });
+                current = effectiveX;
+            }
+            return chunkPositions;
+        }
+    },
     horizontalStartingFrom: function(startNode, increment) {
         return function(nodes, directrix, parentDirectrix) {
             var chunkPositions = [];
@@ -21,6 +66,53 @@ var distributionStrategies = {
                 node.y = directrix;
                 chunkPositions.push({ x: node.x, y: node.y });
                 current += increment;
+            }
+            return chunkPositions;
+        }
+    },
+    horizontalConstrainedInverse: function(endNode, defaultIncrement) {
+        return function(nodes, directrix, parentDirectrix, allNodes) {
+            var chunkPositions = [];
+            var current = endNode.x - (directrix === parentDirectrix ? 0 : -defaultIncrement / 2);
+            var reversed = [].concat(nodes).reverse();
+
+            for (var i = 0; i != reversed.length; ++i) {
+                var node = reversed[i];
+
+                // search all parents already positioned, get their x
+                var parentXs = node.originalNode.parents
+                    .map(function(nodeId) {
+                        return allNodes.find(graphs.byId(nodeId)).x;
+                    }).filter(function(coord) {
+                        return coord !== undefined;
+                    }).map(function(coord) {
+                        return coord + defaultIncrement / 2
+                    });
+                var minimumX = Math.max(...parentXs);
+
+                // then search all children, get their x
+                var childrenXs = allNodes.filter(function(nd) {
+                    return nd.x !== undefined;
+                }).filter(function(nd) {
+                    return nd.originalNode.parents.indexOf(node.id) !== -1;
+                }).map(function(nd) {
+                    return nd.x - defaultIncrement / 2;
+                })
+                var maximumX = Math.min(...childrenXs);
+
+                //   max(current, parents)+minDelta <= node position <= min(current, children)-minDelta
+                var effectiveX = current - defaultIncrement;
+                if (effectiveX > maximumX) {
+                    effectiveX = maximumX;
+                }
+                if (effectiveX < minimumX) {
+                    effectiveX = minimumX;
+                }
+
+                node.x = effectiveX;
+                node.y = directrix;
+                chunkPositions.push({ x: node.x, y: node.y });
+                current = effectiveX;
             }
             return chunkPositions;
         }
@@ -138,9 +230,10 @@ CoordinatesCalculator.prototype = {
         var attemptedDirectrixes = [];
         while (true) {
             var directrix = directrixSelectionStrategy(baselineDirectrix, attemptedDirectrixes);
+            attemptedDirectrixes.push(directrix);
             var currentChunkPositions = {
                 directrix: directrix,
-                chunkPositions: distributionStrategy(nodesToBePositioned, directrix, baselineDirectrix)
+                chunkPositions: distributionStrategy(nodesToBePositioned, directrix, baselineDirectrix, nodes)
             };
             //search for colliding nodes (among those already placed)
             var thereAreCollisions = previousChunksPositions.some(function(previousChunkPosition) {
@@ -149,7 +242,6 @@ CoordinatesCalculator.prototype = {
             if (!thereAreCollisions) {
                 return currentChunkPositions;
             }
-            attemptedDirectrixes.push(directrix);
         }
     },
     _doCollide: function(lhsCoordinatesChunk, rhsCoordinatesChunk) {

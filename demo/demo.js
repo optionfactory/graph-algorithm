@@ -240,6 +240,10 @@ function drawDemoGraphs(graphs, divId, config) {
     });
 }
 
+
+
+drawDemoGraphs(demoGraphs, "default");
+
 drawDemoGraphs(demoGraphs, "horizontalIncrement", {
     alongDirectrixStep:10,
     betweenDirectrixesStep:10,
