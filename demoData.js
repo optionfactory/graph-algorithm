@@ -113,6 +113,25 @@ var demoGraphs = {
             ["root", "br2", "tip"]
         ]
     },
+    forkAtRootAsimmetric: {
+        nodes: [
+            { id: "root", timestamp: 0, parents: [] },
+            { id: "a1", timestamp: 1, parents: ["root"] },
+            { id: "a2", timestamp: 2, parents: ["a1"] },
+            { id: "b1", timestamp: 2, parents: ["root"] },
+            { id: "b2", timestamp: 2, parents: ["b1"] },
+            { id: "tip", timestamp: 5, parents: ["a2"] }
+        ],
+        cheapestToTip: [
+            ["root", "a1", "a2", "tip"]
+        ],
+        costliestToTip: [
+            ["root", "a1", "a2", "tip"]
+        ],
+        costliestPossible: [
+            ["root", "a1", "a2", "tip"]
+        ]
+    },
     forkAtRootLongerBranch: {
         nodes: [
             { id: "root", timestamp: 0, parents: [] },
@@ -196,13 +215,13 @@ var demoGraphs = {
             { id: "b2", timestamp: 4, parents: ["b1"] }
         ],
         cheapestToTip: [
-            ["root","m1","m2","b1","b2","tip"]
+            ["root", "m1", "m2", "b1", "b2", "tip"]
         ],
         costliestToTip: [
-            ["root","m1","m2","m3","m4","m5","tip"]
+            ["root", "m1", "m2", "m3", "m4", "m5", "tip"]
         ],
         costliestPossible: [
-            ["root","m1","m2","m3","m4","m5","tip"]
+            ["root", "m1", "m2", "m3", "m4", "m5", "tip"]
         ]
     },
     twoRoots: {
@@ -257,14 +276,14 @@ var demoGraphs = {
             { id: "c2", timestamp: 0, parents: ["c1"] },
         ],
         cheapestToTip: [
-            ["root","m1","m2","c1","c2","m6","tip"],
-            ["root","m1","b1","b2","m5","m6","tip"],
+            ["root", "m1", "m2", "c1", "c2", "m6", "tip"],
+            ["root", "m1", "b1", "b2", "m5", "m6", "tip"],
         ],
         costliestToTip: [
-            ["root","m1","m2","m3","m4","m5","m6","tip"]
+            ["root", "m1", "m2", "m3", "m4", "m5", "m6", "tip"]
         ],
         costliestPossible: [
-            ["root","m1","m2","m3","m4","m5","m6","tip"]
+            ["root", "m1", "m2", "m3", "m4", "m5", "m6", "tip"]
         ]
     },
     notOverlappingBranches: {
@@ -282,13 +301,13 @@ var demoGraphs = {
             { id: "c2", timestamp: 0, parents: ["c1", "m3"] },
         ],
         cheapestToTip: [
-            ["root","b1","m4","m5","m6","tip"]
+            ["root", "b1", "m4", "m5", "m6", "tip"]
         ],
         costliestToTip: [
-            ["root","b1","m4","c1","c2","m6","tip"]
+            ["root", "b1", "m4", "c1", "c2", "m6", "tip"]
         ],
         costliestPossible: [
-            ["root","b1","m4","c1","c2","m6","tip"]
+            ["root", "b1", "m4", "c1", "c2", "m6", "tip"]
         ]
     },
     parallelBranches: {
@@ -312,12 +331,13 @@ var demoGraphs = {
             { id: "b5", timestamp: 0, parents: ["b4"] },
         ],
         cheapestToTip: [
-            ["root","m1","m2","m3","a4","tip"]        ],
+            ["root", "m1", "m2", "m3", "a4", "tip"]
+        ],
         costliestToTip: [
-            ["root","b1","b2","b3","m3","a4","tip"]
+            ["root", "b1", "b2", "b3", "m3", "a4", "tip"]
         ],
         costliestPossible: [
-            ["root", "b1", "b2", "b3","m3", "m4", "m5", "m6", "m7"]
+            ["root", "b1", "b2", "b3", "m3", "m4", "m5", "m6", "m7"]
         ]
     },
     backAndForth: {
@@ -330,20 +350,20 @@ var demoGraphs = {
             { id: "m4", timestamp: 0, parents: ["m3"] },
             { id: "m5", timestamp: 0, parents: ["m4"] },
             { id: "m6", timestamp: 0, parents: ["m5"] },
-            { id: "tip", timestamp: 0, parents: ["a2","m6"] },
+            { id: "tip", timestamp: 0, parents: ["a2", "m6"] },
             { id: "a0", timestamp: 0, parents: ["root"] },
             { id: "a1", timestamp: 0, parents: ["m1", "a0"] },
             { id: "a2", timestamp: 0, parents: ["a1"] },
         ],
         cheapestToTip: [
-            ["root","a0","a1","a2","tip"],
-            ["root","m1","a1","a2","tip"],
-            ],
+            ["root", "a0", "a1", "a2", "tip"],
+            ["root", "m1", "a1", "a2", "tip"],
+        ],
         costliestToTip: [
-            ["root","m1","m2","m2a","m3","m4","m5","m6","tip"]
+            ["root", "m1", "m2", "m2a", "m3", "m4", "m5", "m6", "tip"]
         ],
         costliestPossible: [
-            ["root","m1","m2","m2a","m3","m4","m5","m6","tip"]
+            ["root", "m1", "m2", "m2a", "m3", "m4", "m5", "m6", "tip"]
         ]
     }
 }
