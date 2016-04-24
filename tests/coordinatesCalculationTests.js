@@ -25,7 +25,7 @@ Object.keys(demoGraphs).forEach(function(graphName) {
         }))
     });
 })
-QUnit.module("Coordinates.navigateForwardAndDetachChunk");
+QUnit.module("Coordinates.isolateFloatingChainAlongPath");
 
 function getPathNavigationTestCases() {
     return {
@@ -218,7 +218,7 @@ var pathNavigationTestCases = getPathNavigationTestCases();
 Object.keys(pathNavigationTestCases).forEach(function(testCaseName) {
     var testCase = pathNavigationTestCases[testCaseName];
     QUnit.test("correct forward subpath is extracted for test case '" + testCaseName + "'", function(assert) {
-        var got = navigateForwardAndDetachChunk(testCase.nodes, testCase.pathToExplore, testCase.forward.startingPoint);
+        var got = isolateFloatingChainAlongPath(testCase.nodes, testCase.pathToExplore, testCase.forward.startingPoint);
         var expected = testCase.forward.expectedPath;
         assert.deepEqual(got, expected);
     });
@@ -228,20 +228,20 @@ var pathNavigationTestCases = getPathNavigationTestCases();
 Object.keys(pathNavigationTestCases).forEach(function(testCaseName) {
     var testCase = pathNavigationTestCases[testCaseName];
     QUnit.test("all parents are updated correctly for test case '" + testCaseName + "'", function(assert) {
-        var result = navigateForwardAndDetachChunk(testCase.nodes, testCase.pathToExplore, testCase.forward.startingPoint);
+        var result = isolateFloatingChainAlongPath(testCase.nodes, testCase.pathToExplore, testCase.forward.startingPoint);
         var expected = testCase.forward.expectedParents;
         Object.keys(expected).forEach(function(nodeId) {
             assert.deepEqual(testCase.nodes.find(graphs.byId(nodeId)).parents, expected[nodeId], "for node " + nodeId);
         })
     });
 });
-QUnit.module("Coordinates.navigateBackwardsAndDetachChunk");
 
+QUnit.module("Coordinates.isolateFloatingChainAlongInversePath");
 var pathNavigationTestCases = getPathNavigationTestCases();
 Object.keys(pathNavigationTestCases).forEach(function(testCaseName) {
     var testCase = pathNavigationTestCases[testCaseName];
     QUnit.test("correct forward subpath is extracted for test case '" + testCaseName + "'", function(assert) {
-        var got = navigateBackwardsAndDetachChunk(testCase.nodes, testCase.pathToExplore, testCase.backwards.endingPoint);
+        var got = isolateFloatingChainAlongInversePath(testCase.nodes, testCase.pathToExplore, testCase.backwards.endingPoint);
         var expected = testCase.backwards.expectedPath;
         assert.deepEqual(got, expected);
     });
@@ -251,7 +251,7 @@ var pathNavigationTestCases = getPathNavigationTestCases();
 Object.keys(pathNavigationTestCases).forEach(function(testCaseName) {
     var testCase = pathNavigationTestCases[testCaseName];
     QUnit.test("all parents are updated correctly for test case '" + testCaseName + "'", function(assert) {
-        var result = navigateBackwardsAndDetachChunk(testCase.nodes, testCase.pathToExplore, testCase.backwards.endingPoint);
+        var result = isolateFloatingChainAlongInversePath(testCase.nodes, testCase.pathToExplore, testCase.backwards.endingPoint);
         var expected = testCase.backwards.expectedParents;
         Object.keys(expected).forEach(function(nodeId) {
             assert.deepEqual(testCase.nodes.find(graphs.byId(nodeId)).parents, expected[nodeId], "for node " + nodeId);

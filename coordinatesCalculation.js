@@ -151,50 +151,50 @@ function removeIfPresent(array, elementToRemove) {
     }
 }
 
-function navigateForwardAndDetachChunk(nodes, pathToExplore, startingPoint) {
-    var finalChain = [];
+function isolateFloatingChainAlongPath(nodes, pathToExplore, startingFromId) {
+    var detachedChain = [];
     var chainStarted = false;
     for (var i = 0; i < pathToExplore.length - 1; ++i) {
-        var parentNodeId = pathToExplore[i];
-        if (parentNodeId !== startingPoint && !chainStarted) {
+        var currentNodeId = pathToExplore[i];
+        if (chainStarted == false && currentNodeId !== startingFromId) {
             continue;
         } else {
             chainStarted = true;
         }
-        var childNodeId = pathToExplore[i + 1];
-        var childNode = nodes.find(graphs.byId(childNodeId));
-        removeIfPresent(childNode.parents, parentNodeId);
-        if (childNode.x !== undefined && childNode.y !== undefined) {
+        var nextNodeId = pathToExplore[i + 1];
+        var nextNode = nodes.find(graphs.byId(nextNodeId));
+        removeIfPresent(nextNode.parents, currentNodeId);
+        if (nextNode.x !== undefined && nextNode.y !== undefined) {
             break;
         } else {
-            finalChain.push(childNodeId);
+            detachedChain.push(nextNodeId);
         }
     }
-    return finalChain;
+    return detachedChain;
 }
 
-function navigateBackwardsAndDetachChunk(nodes, pathToExplore, endingPoint) {
-    var finalChain = [];
+function isolateFloatingChainAlongInversePath(nodes, pathToExplore, endingPoint) {
+    var detachedChain = [];
     var chainStarted = false;
     for (var i = pathToExplore.length; i >= 1; --i) {
-        var parentNodeId = pathToExplore[i - 1];
-        var childNodeId = pathToExplore[i];
+        var previousNodeId = pathToExplore[i - 1];
+        var currentNodeId = pathToExplore[i];
 
-        if (childNodeId !== endingPoint && !chainStarted) {
+        if (chainStarted == false && currentNodeId !== endingPoint) {
             continue;
         } else {
             chainStarted = true;
         }
-        var childNode = nodes.find(graphs.byId(childNodeId));
-        var parentNode = nodes.find(graphs.byId(parentNodeId));
-        removeIfPresent(childNode.parents, parentNodeId);
-        if (parentNode.x !== undefined && parentNode.y !== undefined) {
+        var currentNode = nodes.find(graphs.byId(currentNodeId));
+        var previousNode = nodes.find(graphs.byId(previousNodeId));
+        removeIfPresent(currentNode.parents, previousNodeId);
+        if (previousNode.x !== undefined && previousNode.y !== undefined) {
             break;
         } else {
-            finalChain.push(parentNodeId);
+            detachedChain.push(previousNodeId);
         }
     }
-    return finalChain.reverse();
+    return detachedChain.reverse();
 }
 
 function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, previousChunksPosition, configuration) {
@@ -202,7 +202,7 @@ function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, p
     var newChunksPositions = [];
     do {
         var longestAncestorsChain = BellmanFord.costliestToNode(allNodes, ofNodeId);
-        var longestValidAncestorsChain = navigateBackwardsAndDetachChunk(allNodes, longestAncestorsChain, ofNodeId);
+        var longestValidAncestorsChain = isolateFloatingChainAlongInversePath(allNodes, longestAncestorsChain, ofNodeId);
         var anchestorsChunk = positionNodes(
             configuration.backwardsNodeDistributionStrategy(node, configuration.alongDirectrixStep),
             configuration.directrixSelectionStrategy(configuration.betweenDirectrixesStep),
@@ -215,7 +215,7 @@ function positionAncestorsAndDescendants(allNodes, ofNodeId, currentDirectrix, p
             newChunksPositions.push(anchestorsChunk);
         }
         var longestDescendantsChain = BellmanFord.costliestFromNode(allNodes, ofNodeId);
-        var longestValidDescendantsChain = navigateForwardAndDetachChunk(allNodes, longestDescendantsChain, ofNodeId);
+        var longestValidDescendantsChain = isolateFloatingChainAlongPath(allNodes, longestDescendantsChain, ofNodeId);
         var descendantsChunk = positionNodes(
             configuration.forwardNodeDistributionStrategy(node, configuration.alongDirectrixStep),
             configuration.directrixSelectionStrategy(configuration.betweenDirectrixesStep),
@@ -255,7 +255,7 @@ function calculateCoordinates(nodesToBePositioned, startingPoint, mainDirectrix,
     configuration = configuration || default_configuration;
     
     var costliestPossiblePath = BellmanFord.costliestPossible(nodes);
-    navigateForwardAndDetachChunk(nodes, costliestPossiblePath, costliestPossiblePath[0]);
+    isolateFloatingChainAlongPath(nodes, costliestPossiblePath, costliestPossiblePath[0]);
 
     var allChunksPositions = [];
     var mainChunkPositions = positionNodes(
